@@ -13,21 +13,27 @@
   let visible = [];
 
   // ---------- language ----------
+  const fmtDate = (ts) => (ts
+    ? new Intl.DateTimeFormat(S[lang].locale, { month: 'long', year: 'numeric' }).format(new Date(ts))
+    : '');
+
   function applyLang() {
     const t = S[lang];
     document.documentElement.lang = lang;
-    $('langToggle').textContent = t.toggle;
+    document.querySelectorAll('.lang-toggle').forEach((b) => { b.textContent = t.toggle; });
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t[el.dataset.i18n]; });
     const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(t.waMessage)}`;
     $('waButton').href = wa;
     $('waFloat').href = wa;
+    $('heroCount').textContent = t.works(posts.length);
+    grid.querySelectorAll('.tile-cap small').forEach((el) => { el.textContent = fmtDate(el.dataset.ts); });
     renderFilters();
   }
-  $('langToggle').addEventListener('click', () => {
+  document.querySelectorAll('.lang-toggle').forEach((b) => b.addEventListener('click', () => {
     lang = lang === 'he' ? 'en' : 'he';
     try { localStorage.setItem('sol-lang', lang); } catch {}
     applyLang();
-  });
+  }));
 
   // ---------- data ----------
   const shortcodeOf = (s) => (String(s).match(/\/(?:p|reel|tv)\/([^/?#]+)/) || [])[1] || String(s).trim();
@@ -52,7 +58,11 @@
     const el = $('filters');
     const used = categories.filter((c) => posts.some((p) => (p.categories || []).includes(c.id)));
     if (!used.some((c) => c.id === activeCat)) activeCat = 'all';
-    const chips = [{ id: 'all', label: S[lang].all }, ...used.map((c) => ({ id: c.id, label: c[lang] }))];
+    const count = (id) => posts.filter((p) => (p.categories || []).includes(id)).length;
+    const chips = [
+      { id: 'all', label: S[lang].all, n: posts.length },
+      ...used.map((c) => ({ id: c.id, label: c[lang], n: count(c.id) })),
+    ];
     el.hidden = used.length === 0;
     el.innerHTML = '';
     chips.forEach((c) => {
@@ -62,6 +72,9 @@
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', String(c.id === activeCat));
       b.textContent = c.label;
+      const sup = document.createElement('sup');
+      sup.textContent = c.n;
+      b.appendChild(sup);
       b.onclick = () => { activeCat = c.id; renderFilters(); render(); };
       el.appendChild(b);
     });
@@ -80,6 +93,7 @@
     t.className = 'tile';
     t.setAttribute('aria-label', (post.caption || '').slice(0, 80) || 'SOL');
     t.onclick = () => openLightbox(index);
+    if (index < 12) t.style.setProperty('--i', index); // stagger only the first screenful
 
     if (post.sample) {
       t.innerHTML = `<div class="swatch" style="background:${post.color}"><span>${post.label || ''}</span></div>`;
@@ -105,6 +119,19 @@
         }
       }
       if (canHover && post.media.length > 1) addSlideshow(t, img, post.media);
+      if (canHover) {
+        const cap = document.createElement('span');
+        cap.className = 'tile-cap';
+        const b = document.createElement('b');
+        b.dir = 'auto';
+        b.textContent = (post.caption || '').split('\n')[0];
+        const small = document.createElement('small');
+        small.dataset.ts = post.timestamp || '';
+        small.textContent = fmtDate(post.timestamp);
+        if (b.textContent) cap.appendChild(b);
+        cap.appendChild(small);
+        t.appendChild(cap);
+      }
     }
     const kind = post.media.length > 1 ? 'carousel' : first.type === 'video' ? 'video' : null;
     if (kind) t.insertAdjacentHTML('beforeend', `<span class="badge">${ICONS[kind]}</span>`);
@@ -169,6 +196,7 @@
     visible.forEach((p, i) => frag.appendChild(tileFor(p, i)));
     grid.appendChild(frag);
     $('empty').hidden = visible.length > 0;
+    $('workCount').textContent = visible.length;
     if (!canHover) setTimeout(updateTopRow, 0);
   }
 
@@ -221,6 +249,15 @@
   new IntersectionObserver(([e]) => $('waFloat').classList.toggle('hide', e.isIntersecting))
     .observe($('waButton'));
 
+  // ---------- slim top bar: shown once the big logo has scrolled out of view ----------
+  new IntersectionObserver(([e]) => {
+    const show = !e.isIntersecting && e.boundingClientRect.top < 0;
+    const bar = $('miniBar');
+    bar.classList.toggle('show', show);
+    bar.setAttribute('aria-hidden', String(!show));
+    bar.querySelectorAll('a, button').forEach((el) => { el.tabIndex = show ? 0 : -1; });
+  }).observe($('logo'));
+
   // ---------- lightbox ----------
   let lbPost = 0;
   let lbSlide = 0;
@@ -249,9 +286,11 @@
     if (post.sample) {
       stage.innerHTML = `<div class="swatch-lg" style="background:${post.color}"></div>`;
     } else if (m.type === 'video' && m.external) {
-      // Instagram doesn't allow downloading Reels with licensed music, so play them there.
-      stage.innerHTML = `<a class="lb-external" href="${post.permalink}" target="_blank" rel="noopener">
-        <img src="${m.poster}" alt=""><span>${ICONS.video}${S[lang].watchOnInstagram}</span></a>`;
+      // Reels with licensed music can't be downloaded; show the cover (the link below opens Instagram).
+      const img = document.createElement('img');
+      img.src = m.poster;
+      img.alt = post.caption || '';
+      stage.appendChild(img);
     } else if (m.type === 'video') {
       const v = document.createElement('video');
       v.src = m.src;
@@ -266,6 +305,8 @@
       img.alt = post.caption || '';
       stage.appendChild(img);
     }
+    $('lbCounter').textContent = `${lbPost + 1} / ${visible.length}`;
+    $('lbDate').textContent = fmtDate(post.timestamp);
     $('lbCaption').textContent = post.caption || '';
     $('lbLink').hidden = !post.permalink;
     $('lbLink').href = post.permalink || '#';
