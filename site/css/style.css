@@ -143,3 +143,11 @@ main { max-width: var(--max); margin: 0 auto; }
 }
 .lb-external svg { width: 16px; height: 16px; }
 @media (min-width: 900px) { .filters { flex-wrap: wrap; overflow: visible; } }
+.tile-dots {
+  position: absolute; inset: auto 0 8px; display: flex; gap: 4px; justify-content: center;
+  opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+.tile.sliding .tile-dots { opacity: 1; }
+.tile-dots i { width: 5px; height: 5px; border-radius: 50%; background: #fff; opacity: .5; box-shadow: 0 0 2px rgba(0,0,0,.4); }
+.tile-dots i.on { opacity: 1; }
+.tile.sliding img { transform: none; }

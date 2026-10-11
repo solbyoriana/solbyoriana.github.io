@@ -100,15 +100,45 @@
         v.dataset.src = first.preview || first.src;
         t.appendChild(v);
         t.classList.add('has-video');
-        if (canHover) {
+        if (canHover && post.media.length === 1) {
           t.addEventListener('mouseenter', () => playTile(t));
           t.addEventListener('mouseleave', () => stopTile(t));
         }
       }
+      if (canHover && post.media.length > 1) addSlideshow(t, img, post.media);
     }
     const kind = post.media.length > 1 ? 'carousel' : first.type === 'video' ? 'video' : null;
     if (kind) t.insertAdjacentHTML('beforeend', `<span class="badge">${ICONS[kind]}</span>`);
     return t;
+  }
+
+  // Desktop: hovering a multi-photo post flips through its pictures every 1.5 s.
+  const SLIDE_MS = 1500;
+  const stillOf = (m) => (m.type === 'video' ? m.poster : m.thumb || m.src);
+
+  function addSlideshow(t, img, media) {
+    const dots = document.createElement('span');
+    dots.className = 'tile-dots';
+    dots.innerHTML = media.map(() => '<i></i>').join('');
+    t.appendChild(dots);
+    let i = 0;
+    let timer = null;
+    const show = (n) => {
+      i = n;
+      img.src = stillOf(media[i]);
+      dots.querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === i));
+    };
+    t.addEventListener('mouseenter', () => {
+      media.forEach((m) => { new Image().src = stillOf(m); }); // preload so each flip is instant
+      t.classList.add('sliding');
+      show(0);
+      timer = setInterval(() => show((i + 1) % media.length), SLIDE_MS);
+    });
+    t.addEventListener('mouseleave', () => {
+      clearInterval(timer);
+      t.classList.remove('sliding');
+      show(0);
+    });
   }
 
   function render() {
