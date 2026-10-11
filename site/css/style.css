@@ -151,3 +151,5 @@ main { max-width: var(--max); margin: 0 auto; }
 .tile-dots i { width: 5px; height: 5px; border-radius: 50%; background: #fff; opacity: .5; box-shadow: 0 0 2px rgba(0,0,0,.4); }
 .tile-dots i.on { opacity: 1; }
 .tile.sliding img { transform: none; }
+.tile .fader { opacity: 0; pointer-events: none; }
+.tile .fader.in { opacity: 1; transition: opacity .35s ease; }

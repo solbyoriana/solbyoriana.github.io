@@ -114,6 +114,7 @@
 
   // Desktop: hovering a multi-photo post flips through its pictures every 1.5 s.
   const SLIDE_MS = 1500;
+  const FADE_MS = 350; // keep in sync with .fader transition in style.css
   const stillOf = (m) => (m.type === 'video' ? m.poster : m.thumb || m.src);
 
   function addSlideshow(t, img, media) {
@@ -121,12 +122,32 @@
     dots.className = 'tile-dots';
     dots.innerHTML = media.map(() => '<i></i>').join('');
     t.appendChild(dots);
+    // A second image on top fades in with the next picture, then hands it to the base image.
+    const fader = document.createElement('img');
+    fader.className = 'fader';
+    fader.alt = '';
+    img.after(fader);
     let i = 0;
     let timer = null;
+    let step = 0;
     const show = (n) => {
       i = n;
-      img.src = stillOf(media[i]);
       dots.querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === i));
+      const src = stillOf(media[i]);
+      if (img.src.endsWith(src)) return;
+      const mine = ++step;
+      fader.classList.remove('in');
+      fader.onload = () => {
+        if (mine !== step) return;
+        fader.classList.add('in');
+        setTimeout(() => {
+          if (mine !== step) return;
+          img.src = src;
+          fader.classList.remove('in');
+        }, FADE_MS);
+      };
+      if (fader.src.endsWith(src) && fader.complete) fader.onload(); // same src won't fire load again
+      else fader.src = src;
     };
     t.addEventListener('mouseenter', () => {
       media.forEach((m) => { new Image().src = stillOf(m); }); // preload so each flip is instant
