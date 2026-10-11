@@ -1,33 +1,60 @@
 (() => {
   const WHATSAPP = '972548803868';
+  const PAGE = 24; // tiles shown before "More work"
   const S = window.SOL_STRINGS;
   const $ = (id) => document.getElementById(id);
   const grid = $('grid');
   const canHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let lang = 'he';
   try { lang = localStorage.getItem('sol-lang') || 'he'; } catch {}
   let posts = [];
   let categories = [];
-  let activeCat = 'all';
+  let activeCat = new URLSearchParams(location.search).get('cat') || 'all';
   let visible = [];
+  let shown = 0;
+
+  const t = () => S[lang];
+  const waLink = (text) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
+  const fmtDate = (ts) => (ts
+    ? new Intl.DateTimeFormat(t().locale, { month: 'long', year: 'numeric' }).format(new Date(ts))
+    : '');
+  const catNames = (post) => categories
+    .filter((c) => (post.categories || []).includes(c.id))
+    .map((c) => c[lang]);
+  const shortcodeOf = (s) => (String(s).match(/\/(?:p|reel|tv)\/([^/?#]+)/) || [])[1] || String(s).trim();
+
+  // Captions come straight from Instagram: drop hashtag blocks and "comment below" lines meant for the feed.
+  const FEED_LINE = /👇|תכתבו|תגיבו|ספרו לי|תייגו|שתפו|מה דעתכם|מה אומרות|לינק בביו|link in bio|comment below/i;
+  function cleanCaption(text) {
+    return String(text || '')
+      .replace(/[⁦-⁩‎‏\t]/g, '')
+      .split('\n')
+      .map((l) => l.replace(/(^|\s)#[\p{L}\p{N}_]+/gu, '').trim())
+      .filter((l) => l && !FEED_LINE.test(l))
+      .join('\n');
+  }
+  // The caption to show: Hebrew text in Hebrew mode; style + date in English (captions are written in Hebrew).
+  const captionFor = (post) => (lang === 'he' ? cleanCaption(post.caption) : '');
 
   // ---------- language ----------
-  const fmtDate = (ts) => (ts
-    ? new Intl.DateTimeFormat(S[lang].locale, { month: 'long', year: 'numeric' }).format(new Date(ts))
-    : '');
-
   function applyLang() {
-    const t = S[lang];
+    const s = t();
     document.documentElement.lang = lang;
-    document.querySelectorAll('.lang-toggle').forEach((b) => { b.textContent = t.toggle; });
-    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t[el.dataset.i18n]; });
-    const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(t.waMessage)}`;
-    $('waButton').href = wa;
-    $('waFloat').href = wa;
-    $('heroCount').textContent = t.works(posts.length);
-    grid.querySelectorAll('.tile-cap small').forEach((el) => { el.textContent = fmtDate(el.dataset.ts); });
+    document.title = s.title;
+    document.querySelectorAll('.lang-toggle').forEach((b) => {
+      b.textContent = s.toggle;
+      b.setAttribute('aria-label', s.switchLang);
+    });
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = s[el.dataset.i18n]; });
+    document.querySelectorAll('[data-i18n-label]').forEach((el) => el.setAttribute('aria-label', s[el.dataset.i18nLabel]));
+    $('waButton').href = waLink(s.waMessage);
+    $('waFloat').href = waLink(s.waMessage);
+    $('heroCount').textContent = s.works(posts.length);
     renderFilters();
+    grid.querySelectorAll('.tile').forEach((tile) => labelTile(tile, visible[+tile.dataset.i]));
+    if (!$('lightbox').hidden) showSlide();
   }
   document.querySelectorAll('.lang-toggle').forEach((b) => b.addEventListener('click', () => {
     lang = lang === 'he' ? 'en' : 'he';
@@ -36,102 +63,128 @@
   }));
 
   // ---------- data ----------
-  const shortcodeOf = (s) => (String(s).match(/\/(?:p|reel|tv)\/([^/?#]+)/) || [])[1] || String(s).trim();
-
   async function load() {
-    const [p, c, h] = await Promise.all(
-      ['content/posts.json', 'content/categories.json', 'content/hidden.json']
-        .map((u) => fetch(u, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null)),
+    $('loadError').hidden = true;
+    grid.innerHTML = Array.from({ length: 8 }, () => '<div class="tile skeleton" aria-hidden="true"></div>').join('');
+    const get = (u) => fetch(u, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const [p, c, h, pin] = await Promise.all(
+      ['content/posts.json', 'content/categories.json', 'content/hidden.json', 'content/pinned.json'].map(get),
     );
+    if (!p) {
+      grid.innerHTML = '';
+      $('loadError').hidden = false;
+      return;
+    }
     const hidden = new Set((h || []).map(shortcodeOf));
+    const pinned = (pin || []).map(shortcodeOf);
     categories = c || [];
-    posts = ((p && p.posts) || [])
+    const rank = (x) => {
+      const i = pinned.indexOf(shortcodeOf(x.permalink || ''));
+      return i === -1 ? Infinity : i;
+    };
+    posts = (p.posts || [])
       .filter((x) => !hidden.has(x.id) && !hidden.has(shortcodeOf(x.permalink || '')))
-      .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+      .sort((a, b) => rank(a) - rank(b) || (b.timestamp || '').localeCompare(a.timestamp || ''));
     $('sampleNote').hidden = !posts.some((x) => x.sample);
     applyLang();
     render();
   }
+  $('retryBtn').addEventListener('click', load);
 
-  // ---------- filters ----------
+  // ---------- filters (a few style-led choices; techniques are shown in the viewer instead) ----------
+  const filterDefs = () => categories.filter((c) => c.filter);
+  const matches = (post, def) => [def.id, ...(def.includes || [])].some((id) => (post.categories || []).includes(id));
+  const usedFilters = () => filterDefs().filter((d) => posts.some((p) => matches(p, d)));
+
   function renderFilters() {
     const el = $('filters');
-    const used = categories.filter((c) => posts.some((p) => (p.categories || []).includes(c.id)));
-    if (!used.some((c) => c.id === activeCat)) activeCat = 'all';
-    const chips = [
-      { id: 'all', label: S[lang].all },
-      ...used.map((c) => ({ id: c.id, label: c[lang] })),
-    ];
+    const used = usedFilters();
+    if (activeCat !== 'all' && !used.some((d) => d.id === activeCat)) activeCat = 'all';
     el.hidden = used.length === 0;
     el.innerHTML = '';
-    chips.forEach((c) => {
+    [{ id: 'all', label: t().all }, ...used.map((d) => ({ id: d.id, label: typeof d.filter === 'object' ? d.filter[lang] : d[lang] }))].forEach((c) => {
       const b = document.createElement('button');
       b.className = 'chip';
       b.type = 'button';
-      b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', String(c.id === activeCat));
+      b.dataset.id = c.id;
       b.textContent = c.label;
-      b.onclick = () => { activeCat = c.id; renderFilters(); render(); };
+      b.setAttribute('aria-pressed', String(c.id === activeCat));
+      b.addEventListener('click', () => selectFilter(c.id));
       el.appendChild(b);
     });
+  }
+  function selectFilter(id) {
+    activeCat = id;
+    // update in place so keyboard focus stays on the pressed button
+    $('filters').querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === id)));
+    const url = new URL(location.href);
+    if (id === 'all') url.searchParams.delete('cat'); else url.searchParams.set('cat', id);
+    history.replaceState(null, '', url);
+    render();
   }
 
   // ---------- grid ----------
   const ICONS = {
-    video: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" class="fill"/></svg>',
-    carousel: '<svg viewBox="0 0 24 24"><rect x="7" y="7" width="13" height="13" rx="2" class="fill"/><path d="M4 16V6a2 2 0 0 1 2-2h10" stroke-width="2"/></svg>',
+    video: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" class="fill"/></svg>',
+    carousel: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="13" height="13" rx="2" class="fill"/><path d="M4 16V6a2 2 0 0 1 2-2h10" stroke-width="2"/></svg>',
   };
+
+  function labelTile(tile, post) {
+    if (!tile || !post) return;
+    const names = catNames(post);
+    tile.setAttribute('aria-label', [names.join(', ') || t().work, fmtDate(post.timestamp)].filter(Boolean).join(' · '));
+    const cap = tile.querySelector('.tile-cap');
+    if (!cap) return;
+    const line = captionFor(post).split('\n')[0] || names.slice(0, 2).join(' · ');
+    cap.querySelector('b').textContent = line;
+    cap.querySelector('b').hidden = !line;
+    cap.querySelector('small').textContent = fmtDate(post.timestamp);
+  }
 
   function tileFor(post, index) {
     const first = post.media[0];
-    const t = document.createElement('button');
-    t.type = 'button';
-    t.className = 'tile';
-    t.setAttribute('aria-label', (post.caption || '').slice(0, 80) || 'SOL');
-    t.onclick = () => openLightbox(index);
-    if (index < 12) t.style.setProperty('--i', index); // stagger only the first screenful
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'tile';
+    tile.dataset.i = index;
+    tile.addEventListener('click', () => openLightbox(index, tile));
+    if (index < 12) tile.style.setProperty('--i', index % PAGE); // stagger only the first screenful
+    if (index === 0 && activeCat === 'all') tile.classList.add('feature');
 
     if (post.sample) {
-      t.innerHTML = `<div class="swatch" style="background:${post.color}"><span>${post.label || ''}</span></div>`;
+      tile.innerHTML = `<div class="swatch" style="background:${post.color}"><span>${post.label || ''}</span></div>`;
     } else {
       const img = document.createElement('img');
       img.loading = index < 8 ? 'eager' : 'lazy';
       img.decoding = 'async';
       img.alt = '';
-      img.src = first.type === 'video' ? first.poster : first.thumb || first.src;
-      t.appendChild(img);
-      if (first.type === 'video' && !first.external) {
+      // the large featured tile uses the full image; others the small thumbnail
+      img.src = first.type === 'video' ? first.poster : (index === 0 && activeCat === 'all' ? first.src : first.thumb || first.src);
+      tile.appendChild(img);
+      if (first.type === 'video' && !first.external && !reduceMotion) {
         const v = document.createElement('video');
         v.muted = true;
         v.loop = true;
         v.playsInline = true;
         v.preload = 'none';
+        v.setAttribute('aria-hidden', 'true');
         v.dataset.src = first.preview || first.src;
-        t.appendChild(v);
-        t.classList.add('has-video');
+        tile.appendChild(v);
+        tile.classList.add('has-video');
         if (canHover && post.media.length === 1) {
-          t.addEventListener('mouseenter', () => playTile(t));
-          t.addEventListener('mouseleave', () => stopTile(t));
+          tile.addEventListener('mouseenter', () => playTile(tile));
+          tile.addEventListener('mouseleave', () => stopTile(tile));
         }
       }
-      if (canHover && post.media.length > 1) addSlideshow(t, img, post.media);
+      if (canHover && post.media.length > 1 && !reduceMotion) addSlideshow(tile, img, post.media);
       if (canHover) {
-        const cap = document.createElement('span');
-        cap.className = 'tile-cap';
-        const b = document.createElement('b');
-        b.dir = 'auto';
-        b.textContent = (post.caption || '').split('\n')[0];
-        const small = document.createElement('small');
-        small.dataset.ts = post.timestamp || '';
-        small.textContent = fmtDate(post.timestamp);
-        if (b.textContent) cap.appendChild(b);
-        cap.appendChild(small);
-        t.appendChild(cap);
+        tile.insertAdjacentHTML('beforeend', '<span class="tile-cap" aria-hidden="true"><b dir="auto"></b><small></small></span>');
       }
     }
     const kind = post.media.length > 1 ? 'carousel' : first.type === 'video' ? 'video' : null;
-    if (kind) t.insertAdjacentHTML('beforeend', `<span class="badge">${ICONS[kind]}</span>`);
-    return t;
+    if (kind) tile.insertAdjacentHTML('beforeend', `<span class="badge">${ICONS[kind]}</span>`);
+    labelTile(tile, post);
+    return tile;
   }
 
   // Desktop: hovering a multi-photo post flips through its pictures every 1.5 s.
@@ -139,24 +192,26 @@
   const FADE_MS = 350; // keep in sync with .fader transition in style.css
   const stillOf = (m) => (m.type === 'video' ? m.poster : m.thumb || m.src);
 
-  function addSlideshow(t, img, media) {
+  function addSlideshow(tile, img, media) {
     const dots = document.createElement('span');
     dots.className = 'tile-dots';
+    dots.setAttribute('aria-hidden', 'true');
     dots.innerHTML = media.map(() => '<i></i>').join('');
-    t.appendChild(dots);
+    tile.appendChild(dots);
     // A second image on top fades in with the next picture, then hands it to the base image.
     const fader = document.createElement('img');
     fader.className = 'fader';
     fader.alt = '';
     img.after(fader);
+    const base = img.src;
     let i = 0;
     let timer = null;
     let step = 0;
     const show = (n) => {
       i = n;
       dots.querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === i));
-      const src = stillOf(media[i]);
-      if (img.src.endsWith(src)) return;
+      const src = n === 0 ? base : stillOf(media[i]);
+      if (img.src === new URL(src, location.href).href) return;
       const mine = ++step;
       fader.classList.remove('in');
       fader.onload = () => {
@@ -171,43 +226,57 @@
       if (fader.src.endsWith(src) && fader.complete) fader.onload(); // same src won't fire load again
       else fader.src = src;
     };
-    t.addEventListener('mouseenter', () => {
+    tile.addEventListener('mouseenter', () => {
       media.forEach((m) => { new Image().src = stillOf(m); }); // preload so each flip is instant
-      t.classList.add('sliding');
+      tile.classList.add('sliding');
       show(0);
       timer = setInterval(() => show((i + 1) % media.length), SLIDE_MS);
     });
-    t.addEventListener('mouseleave', () => {
+    tile.addEventListener('mouseleave', () => {
       clearInterval(timer);
-      t.classList.remove('sliding');
+      tile.classList.remove('sliding');
       show(0);
     });
   }
 
   function render() {
     stopAll();
-    visible = activeCat === 'all' ? posts : posts.filter((p) => (p.categories || []).includes(activeCat));
+    const def = filterDefs().find((d) => d.id === activeCat);
+    visible = def ? posts.filter((p) => matches(p, def)) : posts;
     grid.innerHTML = '';
-    const frag = document.createDocumentFragment();
-    visible.forEach((p, i) => frag.appendChild(tileFor(p, i)));
-    grid.appendChild(frag);
+    shown = 0;
+    showMore();
     $('empty').hidden = visible.length > 0;
-    if (!canHover) setTimeout(updateTopRow, 0);
   }
+  function showMore() {
+    const frag = document.createDocumentFragment();
+    const end = Math.min(visible.length, shown + PAGE);
+    for (let i = shown; i < end; i++) frag.appendChild(tileFor(visible[i], i));
+    grid.appendChild(frag);
+    const firstNew = grid.children[shown];
+    shown = end;
+    $('moreBtn').hidden = shown >= visible.length;
+    if (!canHover && !reduceMotion) setTimeout(updateTopRow, 0);
+    return firstNew;
+  }
+  $('moreBtn').addEventListener('click', () => {
+    const firstNew = showMore();
+    if (firstNew) firstNew.focus({ preventScroll: true }); // keep keyboard users in place
+  });
 
   // ---------- video previews ----------
-  function playTile(t) {
-    const v = t.querySelector('video');
+  function playTile(tile) {
+    const v = tile.querySelector('video');
     if (!v) return;
     if (!v.src) v.src = v.dataset.src;
     const p = v.play();
-    if (p) p.then(() => t.classList.add('playing')).catch(() => {});
+    if (p) p.then(() => tile.classList.add('playing')).catch(() => {});
   }
-  function stopTile(t) {
-    const v = t.querySelector('video');
+  function stopTile(tile) {
+    const v = tile.querySelector('video');
     if (!v) return;
     v.pause();
-    t.classList.remove('playing');
+    tile.classList.remove('playing');
   }
   function stopAll() { grid.querySelectorAll('.tile.playing').forEach(stopTile); }
 
@@ -216,20 +285,20 @@
     if (!$('lightbox').hidden) return;
     const vh = window.innerHeight;
     let rowTop = null;
-    for (const t of grid.children) {
-      const r = t.getBoundingClientRect();
+    for (const tile of grid.children) {
+      const r = tile.getBoundingClientRect();
       if (r.bottom < 0) continue;
       if (r.top > vh) break;
-      const shown = Math.min(r.bottom, vh) - Math.max(r.top, 0);
-      if (shown >= r.height * 0.6) { rowTop = r.top; break; }
+      const visiblePart = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+      if (visiblePart >= r.height * 0.6) { rowTop = r.top; break; }
     }
-    grid.querySelectorAll('.tile.has-video').forEach((t) => {
-      const inRow = rowTop !== null && Math.abs(t.getBoundingClientRect().top - rowTop) < 2;
-      if (inRow) { if (!t.classList.contains('playing')) playTile(t); }
-      else if (t.classList.contains('playing')) stopTile(t);
+    grid.querySelectorAll('.tile.has-video').forEach((tile) => {
+      const inRow = rowTop !== null && Math.abs(tile.getBoundingClientRect().top - rowTop) < 2;
+      if (inRow) { if (!tile.classList.contains('playing')) playTile(tile); }
+      else if (tile.classList.contains('playing')) stopTile(tile);
     });
   }
-  if (!canHover) {
+  if (!canHover && !reduceMotion) {
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
@@ -254,60 +323,68 @@
   }).observe($('logo'));
 
   // ---------- lightbox ----------
+  const lb = $('lightbox');
   let lbPost = 0;
   let lbSlide = 0;
+  let returnFocus = null;
 
-  function openLightbox(i) {
+  function openLightbox(i, from) {
     stopAll();
     lbPost = i;
     lbSlide = 0;
-    $('lightbox').hidden = false;
-    document.body.style.overflow = 'hidden';
+    returnFocus = from || document.activeElement;
+    lb.hidden = false;
+    document.body.classList.add('lb-open');
     showSlide();
+    $('lbClose').focus();
   }
   function closeLightbox() {
     const v = $('lbStage').querySelector('video');
     if (v) v.pause();
     $('lbStage').innerHTML = '';
-    $('lightbox').hidden = true;
-    document.body.style.overflow = '';
-    if (!canHover) updateTopRow();
+    lb.hidden = true;
+    document.body.classList.remove('lb-open');
+    if (returnFocus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
+    if (!canHover && !reduceMotion) updateTopRow();
   }
   function showSlide() {
     const post = visible[lbPost];
     const m = post.media[lbSlide];
     const stage = $('lbStage');
+    const names = catNames(post);
     stage.innerHTML = '';
     if (post.sample) {
       stage.innerHTML = `<div class="swatch-lg" style="background:${post.color}"></div>`;
-    } else if (m.type === 'video' && m.external) {
-      // Reels with licensed music can't be downloaded; show the cover (the link below opens Instagram).
-      const img = document.createElement('img');
-      img.src = m.poster;
-      img.alt = post.caption || '';
-      stage.appendChild(img);
-    } else if (m.type === 'video') {
+    } else if (m.type === 'video' && !m.external) {
       const v = document.createElement('video');
       v.src = m.src;
       v.poster = m.poster || '';
       v.controls = true;
       v.playsInline = true;
-      v.autoplay = true; // opened by a tap, so sound is allowed
+      v.autoplay = !reduceMotion; // opened by a tap, so sound is allowed
       stage.appendChild(v);
     } else {
+      // photos, and the covers of Reels Instagram doesn't let us download
       const img = document.createElement('img');
-      img.src = m.src;
-      img.alt = post.caption || '';
+      img.src = m.type === 'video' ? m.poster : m.src;
+      img.alt = names.join(', ') || t().work;
       stage.appendChild(img);
     }
+    const date = fmtDate(post.timestamp);
+    lb.setAttribute('aria-label', [names.join(', ') || t().work, date].filter(Boolean).join(' · '));
     $('lbCounter').textContent = `${lbPost + 1} / ${visible.length}`;
-    $('lbDate').textContent = fmtDate(post.timestamp);
-    $('lbCaption').textContent = post.caption || '';
+    $('lbDate').textContent = [date, ...names].filter(Boolean).join(' · ');
+    const caption = captionFor(post);
+    $('lbCaption').textContent = caption;
+    $('lbCaption').hidden = !caption;
+    $('lbWant').href = waLink(`${t().wantMessage}\n${post.permalink || ''}`.trim());
     $('lbLink').hidden = !post.permalink;
     $('lbLink').href = post.permalink || '#';
     $('lbDots').innerHTML = post.media.length > 1
       ? post.media.map((_, i) => `<i class="${i === lbSlide ? 'on' : ''}"></i>`).join('')
       : '';
+    $('lbPrev').disabled = lbPost === 0 && lbSlide === 0;
+    $('lbNext').disabled = lbPost === visible.length - 1 && lbSlide === post.media.length - 1;
   }
   function step(dir) {
     const post = visible[lbPost];
@@ -324,14 +401,23 @@
   $('lbNext').onclick = () => step(1);
   $('lbPrev').onclick = () => step(-1);
   $('lbClose').onclick = closeLightbox;
-  $('lightbox').addEventListener('click', (e) => {
-    if (e.target.id === 'lightbox' || e.target.id === 'lbStage') closeLightbox();
+  lb.addEventListener('click', (e) => {
+    if (e.target === lb || e.target.id === 'lbStage') closeLightbox();
   });
   addEventListener('keydown', (e) => {
-    if ($('lightbox').hidden) return;
+    if (lb.hidden) return;
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowRight') step(1);
     if (e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'Tab') { // keep focus inside the viewer
+      const items = [...lb.querySelectorAll('button:not([disabled]), a[href]:not([hidden]), video')]
+        .filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
   });
   let touchX = null;
   $('lbStage').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });

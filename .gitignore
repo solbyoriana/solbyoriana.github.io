@@ -7,3 +7,4 @@ site/media/*.orig.mp4
 .claude/skills/
 .claude/agents/
 .claude/settings.local.json
+.impeccable/

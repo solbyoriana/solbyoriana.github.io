@@ -1,15 +1,15 @@
 [
-  { "id": "nailart",     "he": "ציורים",      "en": "Nail art",    "tags": ["nailart", "naildesign", "handpainted", "ציוריםעלציפורניים", "ציוריםבגל"], "keywords": ["ציור", "צוייר", "מכחול", "nail art"] },
-  { "id": "decorations", "he": "קישוטים",     "en": "Decorations", "tags": ["קישוטיציפורניים", "קישוטיםלציפורניים", "3dnails", "charms"], "keywords": ["קישוט", "אבנים", "סברובסקי"] },
-  { "id": "cateye",      "he": "עין חתול",     "en": "Cat eye",     "tags": ["cateye", "cateyenails", "עיןהחתול"], "keywords": ["עין החתול", "עין חתול", "cat eye"] },
-  { "id": "chrome",      "he": "כרום",        "en": "Chrome",      "tags": ["chrome", "chromenails", "chromepowder", "כרום"], "keywords": ["כרום", "chrome", "פנינה", "פנינים"] },
-  { "id": "french",      "he": "פרנץ'",       "en": "French",      "tags": ["french", "frenchnails", "frenchtips", "frenchmanicure", "פרנץ"], "keywords": ["פרנץ", "french"] },
-  { "id": "ombre",       "he": "אומברה",      "en": "Ombré",       "tags": ["ombre", "ombrenails", "babyboomer", "אומברה"], "keywords": ["אומברה", "ombre", "בייבי בומר"] },
-  { "id": "glitter",     "he": "נצנצים",      "en": "Glitter",     "tags": ["glitter", "glitternails", "sparkle", "נצנצים"], "keywords": ["נצנצ", "גליטר", "glitter"] },
-  { "id": "builder",     "he": "ג'ל בנייה",   "en": "Builder gel", "tags": ["buildergel", "biab", "nailextensions", "gelx", "בנייתציפורניים", "בנייהחדשה", "מבנהאנטומי"], "keywords": ["בנייה", "ג'ל בנייה", "מבנה אנטומי"] },
-  { "id": "acrylic",     "he": "אקריל",       "en": "Acrylic",     "tags": ["acrylic", "acrylicnails", "מילויאקריל"], "keywords": ["אקריל", "acrylic"] },
-  { "id": "powder",      "he": "פאודר / דיפ", "en": "Powder / Dip", "tags": ["dippowder", "dipnails"], "keywords": ["פאודר", "דיפ", "dip powder"] },
-  { "id": "gel",         "he": "לק ג'ל",      "en": "Gel polish",  "tags": ["gelpolish", "gelnails", "gelmanicure", "לקגל", "לקגלראשוןלציון"], "keywords": ["לק ג'ל", "לק גל"] },
-  { "id": "bridal",      "he": "כלות",        "en": "Bridal",      "tags": ["bridal", "bridalnails", "weddingnails", "כלות", "חתונה"], "keywords": ["כלה", "כלות", "חתונה", "bridal"] },
-  { "id": "pedicure",    "he": "פדיקור",      "en": "Pedicure",    "tags": ["pedicure", "toes", "toenails", "פדיקור"], "keywords": ["פדיקור", "pedicure"] }
+  {"id":"nailart","he":"ציורים","en":"Nail art","tags":["nailart","naildesign","handpainted","ציוריםעלציפורניים","ציוריםבגל"],"keywords":["ציור","צוייר","מכחול","nail art"],"filter":true},
+  {"id":"french","he":"פרנץ'","en":"French","tags":["french","frenchnails","frenchtips","frenchmanicure","פרנץ"],"keywords":["פרנץ","french"],"filter":true},
+  {"id":"chrome","he":"כרום","en":"Chrome","tags":["chrome","chromenails","chromepowder","כרום"],"keywords":["כרום","chrome","פנינה","פנינים"],"filter":{"he":"כרום ועין חתול","en":"Chrome & cat eye"},"includes":["cateye"]},
+  {"id":"glitter","he":"נצנצים","en":"Glitter","tags":["glitter","glitternails","sparkle","נצנצים"],"keywords":["נצנצ","גליטר","glitter"],"filter":true},
+  {"id":"decorations","he":"קישוטים","en":"Decorations","tags":["קישוטיציפורניים","קישוטיםלציפורניים","3dnails","charms"],"keywords":["קישוט","אבנים","סברובסקי"]},
+  {"id":"cateye","he":"עין חתול","en":"Cat eye","tags":["cateye","cateyenails","עיןהחתול"],"keywords":["עין החתול","עין חתול","cat eye"]},
+  {"id":"ombre","he":"אומברה","en":"Ombré","tags":["ombre","ombrenails","babyboomer","אומברה"],"keywords":["אומברה","ombre","בייבי בומר"]},
+  {"id":"builder","he":"ג'ל בנייה","en":"Builder gel","tags":["buildergel","biab","nailextensions","gelx","בנייתציפורניים","בנייהחדשה","מבנהאנטומי"],"keywords":["בנייה","ג'ל בנייה","מבנה אנטומי"]},
+  {"id":"acrylic","he":"אקריל","en":"Acrylic","tags":["acrylic","acrylicnails","מילויאקריל"],"keywords":["אקריל","acrylic"]},
+  {"id":"powder","he":"פאודר / דיפ","en":"Powder / Dip","tags":["dippowder","dipnails"],"keywords":["פאודר","דיפ","dip powder"]},
+  {"id":"gel","he":"לק ג'ל","en":"Gel polish","tags":["gelpolish","gelnails","gelmanicure","לקגל","לקגלראשוןלציון"],"keywords":["לק ג'ל","לק גל"]},
+  {"id":"bridal","he":"כלות","en":"Bridal","tags":["bridal","bridalnails","weddingnails","כלות","חתונה"],"keywords":["כלה","כלות","חתונה","bridal"]},
+  {"id":"pedicure","he":"פדיקור","en":"Pedicure","tags":["pedicure","toes","toenails","פדיקור"],"keywords":["פדיקור","pedicure"]}
 ]

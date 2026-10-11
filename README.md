@@ -15,8 +15,11 @@ Add the post's Instagram link to `site/content/hidden.json`, for example:
 ```
 Save/commit it (on github.com you can edit the file with the pencil icon). The site updates in a couple of minutes. Or just ask Claude: "hide this post: <link>".
 
+## Pin your best work first
+Put Instagram links in `site/content/pinned.json` in the order you want them; they appear first in the gallery, and the first one is shown large. All other posts follow, newest first. Or ask Claude: "pin this post: <link>".
+
 ## Style filters
-Filters (French, Chrome, Nail art…) are chosen automatically from the hashtags in your captions. The hashtag → filter list is in `site/content/categories.json`. A filter only appears when at least one post uses it.
+Posts are tagged automatically from the hashtags and words in your captions (`site/content/categories.json`). Only categories marked `"filter"` appear as filter buttons (currently: painted art, French, chrome & cat eye, glitter); the rest (builder gel, acrylic, dip…) are shown as details in the viewer.
 
 ## Instagram connection (one-time)
 The site reads posts with an Instagram access token stored as a GitHub secret named `IG_TOKEN` (repo **Settings → Secrets and variables → Actions**). It is never visible on the site or in the code.
