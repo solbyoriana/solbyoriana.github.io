@@ -2,3 +2,8 @@
 .env
 node_modules/
 site/media/*.orig.mp4
+
+# Local AI tooling (Impeccable etc.) - never upload
+.claude/skills/
+.claude/agents/
+.claude/settings.local.json
