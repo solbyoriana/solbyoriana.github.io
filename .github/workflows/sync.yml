@@ -34,6 +34,7 @@ jobs:
         run: node scripts/sync-instagram.mjs
       - name: Save refreshed Instagram token
         if: steps.sync.outputs.token_changed == 'true'
+        continue-on-error: true   # never let a token problem stop new posts from publishing
         env:
           GH_TOKEN: ${{ secrets.SECRETS_PAT }}
         run: |
