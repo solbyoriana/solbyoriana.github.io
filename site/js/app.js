@@ -58,10 +58,9 @@
     const el = $('filters');
     const used = categories.filter((c) => posts.some((p) => (p.categories || []).includes(c.id)));
     if (!used.some((c) => c.id === activeCat)) activeCat = 'all';
-    const count = (id) => posts.filter((p) => (p.categories || []).includes(id)).length;
     const chips = [
-      { id: 'all', label: S[lang].all, n: posts.length },
-      ...used.map((c) => ({ id: c.id, label: c[lang], n: count(c.id) })),
+      { id: 'all', label: S[lang].all },
+      ...used.map((c) => ({ id: c.id, label: c[lang] })),
     ];
     el.hidden = used.length === 0;
     el.innerHTML = '';
@@ -72,9 +71,6 @@
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', String(c.id === activeCat));
       b.textContent = c.label;
-      const sup = document.createElement('sup');
-      sup.textContent = c.n;
-      b.appendChild(sup);
       b.onclick = () => { activeCat = c.id; renderFilters(); render(); };
       el.appendChild(b);
     });
@@ -196,7 +192,6 @@
     visible.forEach((p, i) => frag.appendChild(tileFor(p, i)));
     grid.appendChild(frag);
     $('empty').hidden = visible.length > 0;
-    $('workCount').textContent = visible.length;
     if (!canHover) setTimeout(updateTopRow, 0);
   }
 

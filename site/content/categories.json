@@ -1,7 +1,7 @@
 [
   { "id": "nailart",     "he": "ציורים",      "en": "Nail art",    "tags": ["nailart", "naildesign", "handpainted", "ציוריםעלציפורניים", "ציוריםבגל"], "keywords": ["ציור", "צוייר", "מכחול", "nail art"] },
   { "id": "decorations", "he": "קישוטים",     "en": "Decorations", "tags": ["קישוטיציפורניים", "קישוטיםלציפורניים", "3dnails", "charms"], "keywords": ["קישוט", "אבנים", "סברובסקי"] },
-  { "id": "cateye",      "he": "עין החתול",   "en": "Cat eye",     "tags": ["cateye", "cateyenails", "עיןהחתול"], "keywords": ["עין החתול", "עין חתול", "cat eye"] },
+  { "id": "cateye",      "he": "עין חתול",     "en": "Cat eye",     "tags": ["cateye", "cateyenails", "עיןהחתול"], "keywords": ["עין החתול", "עין חתול", "cat eye"] },
   { "id": "chrome",      "he": "כרום",        "en": "Chrome",      "tags": ["chrome", "chromenails", "chromepowder", "כרום"], "keywords": ["כרום", "chrome", "פנינה", "פנינים"] },
   { "id": "french",      "he": "פרנץ'",       "en": "French",      "tags": ["french", "frenchnails", "frenchtips", "frenchmanicure", "פרנץ"], "keywords": ["פרנץ", "french"] },
   { "id": "ombre",       "he": "אומברה",      "en": "Ombré",       "tags": ["ombre", "ombrenails", "babyboomer", "אומברה"], "keywords": ["אומברה", "ombre", "בייבי בומר"] },
