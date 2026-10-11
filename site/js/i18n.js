@@ -1,7 +1,6 @@
 // UI text in both languages. Category names live in content/categories.json.
 window.SOL_STRINGS = {
   he: {
-    dir: 'rtl',
     toggle: 'EN',
     all: 'הכל',
     contact: 'דברו איתי בוואטסאפ',
@@ -13,7 +12,6 @@ window.SOL_STRINGS = {
     waMessage: 'היי אוריאנה! ראיתי את העבודות שלך באתר ואשמח לפרטים 💅',
   },
   en: {
-    dir: 'ltr',
     toggle: 'עב',
     all: 'All',
     contact: 'Message me on WhatsApp',

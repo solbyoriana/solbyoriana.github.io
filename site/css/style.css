@@ -129,7 +129,8 @@ main { max-width: var(--max); margin: 0 auto; }
 .lb-nav:hover { opacity: 1; }
 .lb-prev { inset-inline-start: 4px; }
 .lb-next { inset-inline-end: 4px; }
-[dir="rtl"] .lb-nav { transform: scaleX(-1); }
+/* Layout stays left-to-right in both languages; only Hebrew text itself runs right-to-left. */
+:lang(he) .chip, :lang(he) .sample-note, :lang(he) .empty, :lang(he) .wa-button span, :lang(he) .location span { direction: rtl; }
 .lb-dots { display: flex; gap: 6px; justify-content: center; min-height: 6px; }
 .lb-dots i { width: 6px; height: 6px; border-radius: 50%; background: #f3f0eb; opacity: .35; }
 .lb-dots i.on { opacity: 1; }

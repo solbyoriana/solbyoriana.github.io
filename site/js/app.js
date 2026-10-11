@@ -16,7 +16,6 @@
   function applyLang() {
     const t = S[lang];
     document.documentElement.lang = lang;
-    document.documentElement.dir = t.dir;
     $('langToggle').textContent = t.toggle;
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t[el.dataset.i18n]; });
     const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(t.waMessage)}`;
@@ -286,7 +285,6 @@
     }
     showSlide();
   }
-  // In RTL the "next" arrow sits on the left, so step direction follows the visual side.
   $('lbNext').onclick = () => step(1);
   $('lbPrev').onclick = () => step(-1);
   $('lbClose').onclick = closeLightbox;
@@ -295,10 +293,9 @@
   });
   addEventListener('keydown', (e) => {
     if ($('lightbox').hidden) return;
-    const rtl = document.documentElement.dir === 'rtl';
     if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowRight') step(rtl ? -1 : 1);
-    if (e.key === 'ArrowLeft') step(rtl ? 1 : -1);
+    if (e.key === 'ArrowRight') step(1);
+    if (e.key === 'ArrowLeft') step(-1);
   });
   let touchX = null;
   $('lbStage').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
@@ -307,8 +304,7 @@
     const dx = e.changedTouches[0].clientX - touchX;
     touchX = null;
     if (Math.abs(dx) < 40) return;
-    const rtl = document.documentElement.dir === 'rtl';
-    step((dx < 0) !== rtl ? 1 : -1);
+    step(dx < 0 ? 1 : -1);
   });
 
   $('year').textContent = new Date().getFullYear();
