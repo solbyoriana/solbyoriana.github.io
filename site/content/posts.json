@@ -1,0 +1,21 @@
+{
+  "updated": null,
+  "posts": [
+    { "id": "s1",  "sample": true, "timestamp": "2026-10-10", "color": "linear-gradient(160deg,#e8c4c0,#c98f8a)", "label": "French", "categories": ["french"], "caption": "Sample — French tips", "media": [{ "type": "image" }] },
+    { "id": "s2",  "sample": true, "timestamp": "2026-10-09", "color": "linear-gradient(160deg,#d9d9de,#8d8f99)", "label": "Chrome", "categories": ["chrome"], "caption": "Sample — chrome", "media": [{ "type": "video" }] },
+    { "id": "s3",  "sample": true, "timestamp": "2026-10-08", "color": "linear-gradient(160deg,#7a1f2b,#3d0d14)", "label": "Gel", "categories": ["gel"], "caption": "Sample — burgundy gel", "media": [{ "type": "image" }, { "type": "image" }] },
+    { "id": "s4",  "sample": true, "timestamp": "2026-10-07", "color": "linear-gradient(160deg,#f6e3d6,#e2b9a0)", "label": "Builder", "categories": ["builder"], "caption": "Sample — builder gel", "media": [{ "type": "image" }] },
+    { "id": "s5",  "sample": true, "timestamp": "2026-10-06", "color": "linear-gradient(160deg,#b9d4c9,#5f8f80)", "label": "Nail art", "categories": ["nailart"], "caption": "Sample — nail art", "media": [{ "type": "video" }] },
+    { "id": "s6",  "sample": true, "timestamp": "2026-10-05", "color": "linear-gradient(160deg,#fbeee9,#e8b4bc)", "label": "Ombré", "categories": ["ombre"], "caption": "Sample — baby boomer", "media": [{ "type": "image" }] },
+    { "id": "s7",  "sample": true, "timestamp": "2026-10-04", "color": "linear-gradient(160deg,#1c1c1c,#4a4a4a)", "label": "Nail art", "categories": ["nailart"], "caption": "Sample — black nail art", "media": [{ "type": "image" }] },
+    { "id": "s8",  "sample": true, "timestamp": "2026-10-03", "color": "linear-gradient(160deg,#f2d38a,#c99a3b)", "label": "Glitter", "categories": ["glitter"], "caption": "Sample — gold glitter", "media": [{ "type": "image" }, { "type": "video" }] },
+    { "id": "s9",  "sample": true, "timestamp": "2026-10-02", "color": "linear-gradient(160deg,#fffaf3,#e9dfd2)", "label": "Bridal", "categories": ["bridal", "french"], "caption": "Sample — bridal", "media": [{ "type": "image" }] },
+    { "id": "s10", "sample": true, "timestamp": "2026-10-01", "color": "linear-gradient(160deg,#c7b8e0,#7d6aa8)", "label": "Chrome", "categories": ["chrome"], "caption": "Sample — lilac chrome", "media": [{ "type": "video" }] },
+    { "id": "s11", "sample": true, "timestamp": "2026-09-30", "color": "linear-gradient(160deg,#e64b4b,#a31f2a)", "label": "Pedicure", "categories": ["pedicure", "gel"], "caption": "Sample — red pedicure", "media": [{ "type": "image" }] },
+    { "id": "s12", "sample": true, "timestamp": "2026-09-29", "color": "linear-gradient(160deg,#d8c3a5,#a1825c)", "label": "Builder", "categories": ["builder"], "caption": "Sample — nude builder", "media": [{ "type": "image" }] },
+    { "id": "s13", "sample": true, "timestamp": "2026-09-28", "color": "linear-gradient(160deg,#a8d5e8,#4b8db0)", "label": "Nail art", "categories": ["nailart"], "caption": "Sample — summer art", "media": [{ "type": "image" }] },
+    { "id": "s14", "sample": true, "timestamp": "2026-09-27", "color": "linear-gradient(160deg,#f5c6d6,#d47a9b)", "label": "Gel", "categories": ["gel"], "caption": "Sample — pink gel", "media": [{ "type": "video" }] },
+    { "id": "s15", "sample": true, "timestamp": "2026-09-26", "color": "linear-gradient(160deg,#eae6df,#bdb5a8)", "label": "French", "categories": ["french"], "caption": "Sample — micro French", "media": [{ "type": "image" }] },
+    { "id": "s16", "sample": true, "timestamp": "2026-09-25", "color": "linear-gradient(160deg,#3b4a3f,#1d2620)", "label": "Glitter", "categories": ["glitter"], "caption": "Sample — forest sparkle", "media": [{ "type": "image" }] }
+  ]
+}

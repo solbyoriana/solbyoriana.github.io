@@ -1,0 +1,11 @@
+[
+  { "id": "french",   "he": "פרנץ'",       "en": "French",     "tags": ["french", "frenchnails", "frenchtips", "frenchmanicure", "פרנץ"] },
+  { "id": "chrome",   "he": "כרום",        "en": "Chrome",     "tags": ["chrome", "chromenails", "chromepowder", "כרום"] },
+  { "id": "nailart",  "he": "נייל ארט",     "en": "Nail art",   "tags": ["nailart", "naildesign", "nailartist", "handpainted", "ציורעלציפורניים", "נייללארט"] },
+  { "id": "builder",  "he": "בנייה",        "en": "Builder gel", "tags": ["buildergel", "biab", "nailextensions", "gelx", "בנייתציפורניים", "בנייה"] },
+  { "id": "gel",      "he": "לק ג'ל",       "en": "Gel polish", "tags": ["gelpolish", "gelnails", "gelmanicure", "לקגל", "לקג׳ל"] },
+  { "id": "ombre",    "he": "אומברה",       "en": "Ombré",      "tags": ["ombre", "ombrenails", "babyboomer", "אומברה"] },
+  { "id": "glitter",  "he": "נצנצים",       "en": "Glitter",    "tags": ["glitter", "glitternails", "sparkle", "נצנצים"] },
+  { "id": "bridal",   "he": "כלות",         "en": "Bridal",     "tags": ["bridal", "bridalnails", "weddingnails", "כלות", "חתונה"] },
+  { "id": "pedicure", "he": "פדיקור",       "en": "Pedicure",   "tags": ["pedicure", "toes", "toenails", "פדיקור"] }
+]

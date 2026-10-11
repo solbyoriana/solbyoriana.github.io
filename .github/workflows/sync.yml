@@ -1,0 +1,69 @@
+name: Update site from Instagram
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *'   # every 3 days, 06:00 UTC (09:00 Israel)
+  workflow_dispatch:         # the "Run workflow" button = refresh now
+  push:
+    branches: [main]         # deploy whenever the site files change
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install ffmpeg
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Sync Instagram posts
+        id: sync
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+        run: node scripts/sync-instagram.mjs
+      - name: Save refreshed Instagram token
+        if: steps.sync.outputs.token_changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SECRETS_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::Instagram issued a new token but SECRETS_PAT is not set, so it could not be saved. See README."
+          else
+            gh secret set IG_TOKEN --repo "$GITHUB_REPOSITORY" < .ig-token-new
+          fi
+          rm -f .ig-token-new
+      - name: Commit new posts
+        run: |
+          git config user.name "sol-bot"
+          git config user.email "sol-bot@users.noreply.github.com"
+          git add site/content site/media
+          git diff --cached --quiet && echo "No changes." || (git commit -m "Update posts from Instagram" && git push)
+
+  deploy:
+    needs: sync
+    if: always() && (needs.sync.result == 'success' || needs.sync.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
