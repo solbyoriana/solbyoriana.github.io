@@ -507,16 +507,14 @@
     const W = Math.round(hero.width);
     const H = Math.round(hero.height);
     const PAD = 22;
-    const box = (r) => ({ l: r.left - hero.left - PAD, r: r.right - hero.left + PAD, t: r.top - hero.top - PAD, b: r.bottom - hero.top + PAD });
-    const textBox = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); return box(rg.getBoundingClientRect()); };
-    const keepOut = [
-      box(document.querySelector('.logo img').getBoundingClientRect()),
-      textBox(document.querySelector('.intro')),
-      textBox(document.querySelector('.meta-line')),
-      ...[...document.querySelectorAll('.hero .controls, .hero .socials')].map((el) => box(el.getBoundingClientRect())),
-    ];
+    // the whole content column (from the left buttons to the right icons, full height) stays clear
+    const colL = document.querySelector('.hero .controls').getBoundingClientRect().left - hero.left - PAD;
+    const colR = document.querySelector('.hero .socials').getBoundingClientRect().right - hero.left + PAD;
+    const placed = [];
+    const GAP = 10; // minimum space between two sparkles, so none overlap
     const free = (x, y, s) => x - s > 10 && x + s < W - 10 && y - s > 8 && y + s < H - 8
-      && !keepOut.some((k) => x + s > k.l && x - s < k.r && y + s > k.t && y - s < k.b);
+      && (x + s < colL || x - s > colR)
+      && placed.every(([px, py, ps]) => Math.hypot(x - px, y - py) > s + ps + GAP);
     let seed = 7;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     const star = (x, y, s) => `<path d="M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}Z"/>`;
@@ -529,6 +527,7 @@
         const k = rnd();
         const s = k < 0.5 ? 1.2 + rnd() * 0.7 : k < 0.88 ? 4 + rnd() * 3.5 : 9 + rnd() * 5;
         if (!free(x, y, s)) continue;
+        placed.push([x, y, s]);
         out += s < 2 ? `<circle cx="${x}" cy="${y}" r="${s.toFixed(1)}"/>` : star(x, y, Math.round(s));
       }
     }
