@@ -6,7 +6,8 @@
   --tile: #e9e4dc;
   --serif: 'Frank Ruhl Libre', Georgia, serif;
   --sans: 'Heebo', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --gap: 3px;
+  --gap: 6px;
+  --radius: 12px;
   --max: 1200px;
 }
 
@@ -60,12 +61,13 @@ main { max-width: var(--max); margin: 0 auto; }
 .chip[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
 /* ---------- grid ---------- */
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); padding: 0 8px; }
 @media (min-width: 900px) {
-  .grid { grid-template-columns: repeat(4, 1fr); padding: 0 16px; --gap: 8px; }
+  .grid { grid-template-columns: repeat(4, 1fr); padding: 0 16px; --gap: 14px; --radius: 18px; }
 }
 .tile {
   position: relative; aspect-ratio: 4 / 5; overflow: hidden;
+  border-radius: var(--radius); isolation: isolate; /* isolation keeps videos clipped to the corners in Safari */
   background: var(--tile); cursor: pointer; padding: 0; width: 100%;
 }
 .tile img, .tile video, .tile .swatch { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -153,3 +155,4 @@ main { max-width: var(--max); margin: 0 auto; }
 .tile.sliding img { transform: none; }
 .tile .fader { opacity: 0; pointer-events: none; }
 .tile .fader.in { opacity: 1; transition: opacity .35s ease; }
+.lb-stage img, .lb-stage video, .lb-external { border-radius: 14px; overflow: hidden; }
