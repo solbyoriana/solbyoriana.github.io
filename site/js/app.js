@@ -119,7 +119,7 @@
     visible.forEach((p, i) => frag.appendChild(tileFor(p, i)));
     grid.appendChild(frag);
     $('empty').hidden = visible.length > 0;
-    if (!canHover) requestAnimationFrame(updateTopRow);
+    if (!canHover) setTimeout(updateTopRow, 0);
   }
 
   // ---------- video previews ----------
@@ -161,7 +161,7 @@
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => { ticking = false; updateTopRow(); });
+      setTimeout(() => { ticking = false; updateTopRow(); }, 100); // timer, not rAF: rAF can stall in in-app browsers
     };
     addEventListener('scroll', onScroll, { passive: true });
     addEventListener('resize', onScroll);
