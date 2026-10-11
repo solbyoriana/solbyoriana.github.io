@@ -107,14 +107,9 @@ svg .fill { fill: currentColor; stroke: none; }
   .hero { padding-bottom: 40px; }
   .logo { width: 300px; margin: 6px auto 18px; }
 }
-/* ornaments: sparkles taken from the logo, framing the outer edges of the bright stripe */
-.ornament {
-  position: absolute; top: 0; height: 100%; width: 320px; pointer-events: none; display: none;
-  fill: var(--ink); opacity: .45;
-}
-.ornament-left { left: max(0px, calc((100% - var(--max)) / 2)); }
-.ornament-right { right: max(0px, calc((100% - var(--max)) / 2)); transform: scaleX(-1); }
-@media (min-width: 1024px) { .ornament { display: block; } } /* only where the sides are truly empty */
+/* ornaments: sparkles taken from the logo, scattered through the empty parts of the bright stripe */
+.ornament { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; fill: var(--ink); opacity: .45; }
+@media (min-width: 1024px) { .ornament { display: block; } } /* phones/tablets: no empty sides to fill */
 .logo img { width: 100%; height: auto; }
 /* the logo file has a cream background baked in; "darken" makes it vanish into any cream/blurred surface */
 .logo img, .mini-logo img { mix-blend-mode: darken; }

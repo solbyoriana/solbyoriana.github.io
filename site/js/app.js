@@ -59,6 +59,7 @@
     $('waButton').href = waLink(s.waMessage);
     $('waFloat').href = waLink(s.waMessage);
     $('heroCount').textContent = s.works(posts.length);
+    if (typeof redrawSparkles === 'function') redrawSparkles(); // the info line width just changed
     applyTheme();
     renderFilters();
     grid.querySelectorAll('.tile').forEach((tile) => labelTile(tile, visible[+tile.dataset.i]));
@@ -496,6 +497,51 @@
     else jumpPost(1);
   });
 
+  // ---------- sparkles in the bright stripe ----------
+  // Fills every empty part of the stripe with the logo's stars, keeping clear of the logo, text and buttons.
+  // A fixed seed means the same pattern on every visit.
+  function drawSparkles() {
+    const svg = $('sparkles');
+    if (!svg || getComputedStyle(svg).display === 'none') return;
+    const hero = svg.parentElement.getBoundingClientRect();
+    const W = Math.round(hero.width);
+    const H = Math.round(hero.height);
+    const PAD = 22;
+    const box = (r) => ({ l: r.left - hero.left - PAD, r: r.right - hero.left + PAD, t: r.top - hero.top - PAD, b: r.bottom - hero.top + PAD });
+    const textBox = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); return box(rg.getBoundingClientRect()); };
+    const keepOut = [
+      box(document.querySelector('.logo img').getBoundingClientRect()),
+      textBox(document.querySelector('.intro')),
+      textBox(document.querySelector('.meta-line')),
+      ...[...document.querySelectorAll('.hero .controls, .hero .socials')].map((el) => box(el.getBoundingClientRect())),
+    ];
+    const free = (x, y, s) => x - s > 10 && x + s < W - 10 && y - s > 8 && y + s < H - 8
+      && !keepOut.some((k) => x + s > k.l && x - s < k.r && y + s > k.t && y - s < k.b);
+    let seed = 7;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const star = (x, y, s) => `<path d="M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}Z"/>`;
+    const CELL = 62; // one sparkle per cell, jittered, so they spread evenly without looking gridded
+    let out = '';
+    for (let gy = 0; gy < H; gy += CELL) {
+      for (let gx = 0; gx < W; gx += CELL) {
+        const x = Math.round(gx + rnd() * CELL);
+        const y = Math.round(gy + rnd() * CELL);
+        const k = rnd();
+        const s = k < 0.5 ? 1.2 + rnd() * 0.7 : k < 0.88 ? 4 + rnd() * 3.5 : 9 + rnd() * 5;
+        if (!free(x, y, s)) continue;
+        out += s < 2 ? `<circle cx="${x}" cy="${y}" r="${s.toFixed(1)}"/>` : star(x, y, Math.round(s));
+      }
+    }
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = out;
+  }
+  let sparkleTimer;
+  const redrawSparkles = () => { clearTimeout(sparkleTimer); sparkleTimer = setTimeout(drawSparkles, 120); };
+  addEventListener('resize', redrawSparkles);
+  if (document.fonts) document.fonts.ready.then(drawSparkles);
+  document.querySelectorAll('.lang-toggle').forEach((b) => b.addEventListener('click', redrawSparkles));
+
   $('year').textContent = new Date().getFullYear();
   load();
+  drawSparkles();
 })();
