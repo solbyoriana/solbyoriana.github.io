@@ -2,11 +2,11 @@
 
 Portfolio site for SOL · Nail & Beauty Artist. It shows every Instagram post (@solbyoriana) and updates itself.
 
-**Live site:** https://xclustercode.github.io/sol-website/
+**Live site:** https://solbyoriana.github.io/
 
 ## How it stays up to date
 - Every **3 days** GitHub checks Instagram, downloads new posts and republishes the site.
-- **Refresh now:** open https://github.com/xClusterCode/sol-website/actions/workflows/sync.yml → **Run workflow** → **Run workflow**. The site updates about 2–5 minutes later. (Bookmark this page on your phone; it works in the GitHub app too.)
+- **Refresh now:** open https://github.com/solbyoriana/solbyoriana.github.io/actions/workflows/sync.yml → **Run workflow** → **Run workflow**. The site updates about 2–5 minutes later. (Bookmark this page on your phone; it works in the GitHub app too.)
 
 ## Hide a post
 Add the post's Instagram link to `site/content/hidden.json`, for example:
