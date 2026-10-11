@@ -95,19 +95,37 @@ svg .fill { fill: currentColor; stroke: none; }
 .socials svg { width: 21px; height: 21px; }
 
 /* ---------- hero ---------- */
-.hero { background: var(--bg); padding: 14px var(--pad) clamp(30px, 4vw, 44px); text-align: center; }
-.hero .topbar { max-width: calc(var(--max) - 2 * var(--pad)); margin: 0 auto; }
-.logo { margin: 18px auto 26px; width: min(380px, 76vw); }
-@media (min-width: 900px) { .logo { width: 300px; margin: 4px auto 18px; } } /* more of the work above the fold */
+.hero { position: relative; overflow: hidden; background: var(--bg); padding: 14px var(--pad) 22px; text-align: center; }
+/* controls sit in the logo row (top corners) instead of a row of their own */
+.hero .topbar {
+  position: absolute; top: 14px; z-index: 2;
+  left: max(var(--pad), calc((100% - var(--max)) / 2 + var(--pad)));
+  right: max(var(--pad), calc((100% - var(--max)) / 2 + var(--pad)));
+}
+.logo { position: relative; margin: 46px auto 16px; width: min(240px, 60vw); }
+@media (min-width: 900px) {
+  .hero { padding-bottom: 40px; }
+  .logo { width: 300px; margin: 6px auto 18px; }
+}
+/* ornaments: thin sun arcs, a ruled line with a diamond, and sparkles, on the empty bright sides only */
+.ornament {
+  position: absolute; left: 50%; top: 50%; width: 1120px; height: 220px; transform: translate(-50%, -50%);
+  pointer-events: none; overflow: visible; display: none;
+}
+.ornament .o-line { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .38; vector-effect: non-scaling-stroke; }
+.ornament .o-line .o-fill { fill: var(--ink); stroke: none; }
+.ornament > .o-fill { fill: var(--ink); opacity: .5; }
+@media (min-width: 1024px) { .ornament { display: block; } } /* only where the sides are truly empty */
 .logo img { width: 100%; height: auto; }
 /* the logo file has a cream background baked in; "darken" makes it vanish into any cream/blurred surface */
 .logo img, .mini-logo img { mix-blend-mode: darken; }
 .intro {
-  margin: 0 auto; max-width: 34ch; font-family: var(--serif); font-size: clamp(19px, 2.4vw, 24px);
+  margin: 0 auto; max-width: 34ch; font-family: var(--serif); font-size: clamp(17px, 2.4vw, 24px);
   line-height: 1.45; font-weight: 400; color: var(--ink); text-wrap: balance;
 }
+@media (min-width: 900px) { .intro { max-width: 62ch; font-size: 20px; } } /* one line on wide screens */
 .meta-line {
-  margin: 14px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px;
+  margin: 10px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px;
   font-size: 13px; color: var(--muted); letter-spacing: .02em;
 }
 .meta-line a { text-decoration: none; border-bottom: 1px solid var(--line); transition: border-color .2s; }
