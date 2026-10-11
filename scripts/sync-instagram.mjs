@@ -64,10 +64,18 @@ async function fetchAllMedia() {
   return items;
 }
 
-async function download(url, file) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed (${res.status}) for ${file}`);
-  writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+async function download(url, file, tries = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Download failed (${res.status}) for ${file}`);
+      writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+      return;
+    } catch (e) {
+      if (i >= tries) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
 }
 
 const ff = (args) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args], { stdio: 'inherit' });
@@ -77,6 +85,14 @@ async function saveMedia(m) {
   const id = m.id;
   const rel = (name) => `media/${name}`;
   const abs = (name) => join(MEDIA_DIR, name);
+
+  // Reels with licensed music come without a downloadable video — keep the cover and link to Instagram.
+  if (m.media_type === 'VIDEO' && !m.media_url) {
+    if (!m.thumbnail_url) throw new Error('no video or cover image available');
+    const poster = `${id}.jpg`;
+    if (!existsSync(abs(poster))) await download(m.thumbnail_url, abs(poster));
+    return { type: 'video', external: true, poster: rel(poster) };
+  }
 
   if (m.media_type === 'VIDEO') {
     const full = `${id}.mp4`, poster = `${id}.jpg`, preview = `${id}_p.mp4`;
@@ -115,8 +131,13 @@ async function saveMedia(m) {
   return { type: 'image', src: rel(full), ...(existsSync(abs(thumb)) ? { thumb: rel(thumb) } : {}) };
 }
 
-function categoriesFor(tags, categories) {
-  return categories.filter((c) => c.tags.some((t) => tags.includes(t.toLowerCase()))).map((c) => c.id);
+// A post joins a filter if it uses one of its hashtags, or its caption contains one of its keywords.
+function categoriesFor(caption, tags, categories) {
+  const text = caption.toLowerCase().replace(/[׳']/g, '');
+  return categories
+    .filter((c) => c.tags.some((t) => tags.includes(t.toLowerCase()))
+      || (c.keywords || []).some((k) => text.includes(k.toLowerCase().replace(/[׳']/g, ''))))
+    .map((c) => c.id);
 }
 
 async function main() {
@@ -145,7 +166,7 @@ async function main() {
         permalink: item.permalink,
         timestamp: item.timestamp,
         caption: caption.replace(/(\s*#[\p{L}\p{N}_]+)+\s*$/u, '').trim(), // drop the trailing hashtag block
-        categories: categoriesFor(tags, categories),
+        categories: categoriesFor(caption, tags, categories),
         media,
       });
     } catch (e) {

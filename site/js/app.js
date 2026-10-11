@@ -91,7 +91,7 @@
       img.alt = '';
       img.src = first.type === 'video' ? first.poster : first.thumb || first.src;
       t.appendChild(img);
-      if (first.type === 'video') {
+      if (first.type === 'video' && !first.external) {
         const v = document.createElement('video');
         v.muted = true;
         v.loop = true;
@@ -198,6 +198,10 @@
     stage.innerHTML = '';
     if (post.sample) {
       stage.innerHTML = `<div class="swatch-lg" style="background:${post.color}"></div>`;
+    } else if (m.type === 'video' && m.external) {
+      // Instagram doesn't allow downloading Reels with licensed music, so play them there.
+      stage.innerHTML = `<a class="lb-external" href="${post.permalink}" target="_blank" rel="noopener">
+        <img src="${m.poster}" alt=""><span>${ICONS.video}${S[lang].watchOnInstagram}</span></a>`;
     } else if (m.type === 'video') {
       const v = document.createElement('video');
       v.src = m.src;
