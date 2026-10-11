@@ -1,0 +1,11 @@
+{
+  "_help": "Posts whose caption contains any of these words are treated as promos/tutorials/announcements and kept off the website (they stay on Instagram). To show one anyway, add its Instagram link to 'approved'.",
+  "autoHideKeywords": [
+    "מדריך", "הדרכה", "חלק 2", "חלק 3", "לחלק 2", "tutorial",
+    "ממומן", "שת\"פ", "שיתוף פעולה",
+    "גוונים חדשים", "קולקציה חדשה", "shut up and take my money",
+    "המבצע", "מבצע ", "הנחה", "הגרלה", "giveaway",
+    "קורס", "סדנה", "מודיעה", "לתמוך בי"
+  ],
+  "approved": []
+}

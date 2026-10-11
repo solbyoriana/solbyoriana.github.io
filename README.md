@@ -15,8 +15,14 @@ Add the post's Instagram link to `site/content/hidden.json`, for example:
 ```
 Save/commit it (on github.com you can edit the file with the pencil icon). The site updates in a couple of minutes. Or just ask Claude: "hide this post: <link>".
 
+## Promos and tutorials stay on Instagram
+Posts whose caption contains words like מדריך, מבצע, גוונים חדשים, ממומן (full list in `site/content/curation.json`) are kept off the website automatically. To show one anyway, add its link to `approved` in that file (or pin it).
+
 ## Pin your best work first
 Put Instagram links in `site/content/pinned.json` in the order you want them; they appear first in the gallery, and the first one is shown large. All other posts follow, newest first. Or ask Claude: "pin this post: <link>".
+
+## Dark / bright mode
+The site opens in dark mode; visitors can switch with the ◐ button (their choice is remembered). The logo stripe at the top stays bright in both modes.
 
 ## Style filters
 Posts are tagged automatically from the hashtags and words in your captions (`site/content/categories.json`). Only categories marked `"filter"` appear as filter buttons (currently: painted art, French, chrome & cat eye, glitter); the rest (builder gel, acrylic, dip…) are shown as details in the viewer.

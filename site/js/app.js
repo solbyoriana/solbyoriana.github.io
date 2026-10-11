@@ -25,14 +25,21 @@
     .map((c) => c[lang]);
   const shortcodeOf = (s) => (String(s).match(/\/(?:p|reel|tv)\/([^/?#]+)/) || [])[1] || String(s).trim();
 
-  // Captions come straight from Instagram: drop hashtag blocks and "comment below" lines meant for the feed.
-  const FEED_LINE = /👇|תכתבו|תגיבו|ספרו לי|תייגו|שתפו|מה דעתכם|מה אומרות|לינק בביו|link in bio|comment below/i;
+  // Captions come straight from Instagram: drop hashtags, "comment below" asks and booking chatter meant for the feed.
+  // A feed ask is cut from where it starts, so the descriptive half of a mixed line survives.
+  const FEED_ASK = /👇|תכתבו|תגיבו|ספרו לי|תייגו|שתפו|מה דעתכם|מה אומרות|לינק בביו|link in bio|comment below|דפדפו/i;
+  const BOOKING_LINE = /תורים|תור פנוי|בקליניקה|נשארו מקומות|המקומות נתפסים|דברו איתי|\d{3}-?\d{7}/;
   function cleanCaption(text) {
     return String(text || '')
       .replace(/[⁦-⁩‎‏\t]/g, '')
       .split('\n')
-      .map((l) => l.replace(/(^|\s)#[\p{L}\p{N}_]+/gu, '').trim())
-      .filter((l) => l && !FEED_LINE.test(l))
+      .map((l) => {
+        l = l.replace(/(^|\s)#[\p{L}\p{N}_]+/gu, '').trim();
+        const ask = l.search(FEED_ASK);
+        if (ask !== -1) l = l.slice(0, ask).replace(/[\s,–—-]+$/u, '').trim();
+        return l;
+      })
+      .filter((l) => l && !BOOKING_LINE.test(l))
       .join('\n');
   }
   // The caption to show: Hebrew text in Hebrew mode; style + date in English (captions are written in Hebrew).
@@ -52,10 +59,27 @@
     $('waButton').href = waLink(s.waMessage);
     $('waFloat').href = waLink(s.waMessage);
     $('heroCount').textContent = s.works(posts.length);
+    applyTheme();
     renderFilters();
     grid.querySelectorAll('.tile').forEach((tile) => labelTile(tile, visible[+tile.dataset.i]));
     if (!$('lightbox').hidden) showSlide();
   }
+  // ---------- dark / bright theme (dark by default; the first paint is set by the inline script in <head>) ----------
+  const theme = () => document.documentElement.dataset.theme || 'dark';
+  function applyTheme() {
+    const dark = theme() === 'dark';
+    document.querySelector('meta[name="theme-color"]').content = dark ? '#141210' : '#F3F0EB';
+    document.querySelectorAll('.theme-toggle').forEach((b) => {
+      b.setAttribute('aria-label', dark ? t().toLight : t().toDark);
+      b.title = b.getAttribute('aria-label');
+    });
+  }
+  document.querySelectorAll('.theme-toggle').forEach((b) => b.addEventListener('click', () => {
+    document.documentElement.dataset.theme = theme() === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('sol-theme', theme()); } catch {}
+    applyTheme();
+  }));
+
   document.querySelectorAll('.lang-toggle').forEach((b) => b.addEventListener('click', () => {
     lang = lang === 'he' ? 'en' : 'he';
     try { localStorage.setItem('sol-lang', lang); } catch {}
@@ -65,10 +89,11 @@
   // ---------- data ----------
   async function load() {
     $('loadError').hidden = true;
-    grid.innerHTML = Array.from({ length: 8 }, () => '<div class="tile skeleton" aria-hidden="true"></div>').join('');
+    // placeholder tiles in the real layout (large first tile) so nothing jumps when photos arrive
+    grid.innerHTML = Array.from({ length: 9 }, (_, i) => `<div class="tile skeleton${i === 0 ? ' feature' : ''}" aria-hidden="true"></div>`).join('');
     const get = (u) => fetch(u, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const [p, c, h, pin] = await Promise.all(
-      ['content/posts.json', 'content/categories.json', 'content/hidden.json', 'content/pinned.json'].map(get),
+    const [p, c, h, pin, cur] = await Promise.all(
+      ['content/posts.json', 'content/categories.json', 'content/hidden.json', 'content/pinned.json', 'content/curation.json'].map(get),
     );
     if (!p) {
       grid.innerHTML = '';
@@ -82,8 +107,17 @@
       const i = pinned.indexOf(shortcodeOf(x.permalink || ''));
       return i === -1 ? Infinity : i;
     };
+    // Promos, tutorials and announcements stay on Instagram unless pinned or approved (content/curation.json).
+    const keywords = ((cur && cur.autoHideKeywords) || []).map((k) => k.toLowerCase());
+    const approved = new Set(((cur && cur.approved) || []).map(shortcodeOf));
+    const isWork = (x) => {
+      const code = shortcodeOf(x.permalink || '');
+      if (approved.has(code) || pinned.includes(code)) return true;
+      const cap = String(x.caption || '').toLowerCase();
+      return !keywords.some((k) => cap.includes(k));
+    };
     posts = (p.posts || [])
-      .filter((x) => !hidden.has(x.id) && !hidden.has(shortcodeOf(x.permalink || '')))
+      .filter((x) => !hidden.has(x.id) && !hidden.has(shortcodeOf(x.permalink || '')) && isWork(x))
       .sort((a, b) => rank(a) - rank(b) || (b.timestamp || '').localeCompare(a.timestamp || ''));
     $('sampleNote').hidden = !posts.some((x) => x.sample);
     applyLang();
@@ -121,6 +155,7 @@
     if (id === 'all') url.searchParams.delete('cat'); else url.searchParams.set('cat', id);
     history.replaceState(null, '', url);
     render();
+    $('status').textContent = t().works(visible.length); // one calm announcement instead of the whole grid
   }
 
   // ---------- grid ----------
@@ -328,6 +363,10 @@
   let lbSlide = 0;
   let returnFocus = null;
 
+  // everything outside the viewer is made inert while it's open
+  const setBackgroundInert = (on) => document.querySelectorAll('body > :not(#lightbox):not(script)')
+    .forEach((el) => { el.inert = on; });
+
   function openLightbox(i, from) {
     stopAll();
     lbPost = i;
@@ -335,6 +374,7 @@
     returnFocus = from || document.activeElement;
     lb.hidden = false;
     document.body.classList.add('lb-open');
+    setBackgroundInert(true);
     showSlide();
     $('lbClose').focus();
   }
@@ -344,6 +384,7 @@
     $('lbStage').innerHTML = '';
     lb.hidden = true;
     document.body.classList.remove('lb-open');
+    setBackgroundInert(false);
     if (returnFocus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
     if (!canHover && !reduceMotion) updateTopRow();
   }
@@ -372,7 +413,8 @@
     }
     const date = fmtDate(post.timestamp);
     lb.setAttribute('aria-label', [names.join(', ') || t().work, date].filter(Boolean).join(' · '));
-    $('lbCounter').textContent = `${lbPost + 1} / ${visible.length}`;
+    const slides = post.media.length > 1 ? ` · ${lbSlide + 1}/${post.media.length}` : '';
+    $('lbCounter').textContent = `${lbPost + 1} / ${visible.length}${slides}`;
     $('lbDate').textContent = [date, ...names].filter(Boolean).join(' · ');
     const caption = captionFor(post);
     $('lbCaption').textContent = caption;
@@ -380,8 +422,9 @@
     $('lbWant').href = waLink(`${t().wantMessage}\n${post.permalink || ''}`.trim());
     $('lbLink').hidden = !post.permalink;
     $('lbLink').href = post.permalink || '#';
+    // dots are real buttons: tap one to jump to that photo
     $('lbDots').innerHTML = post.media.length > 1
-      ? post.media.map((_, i) => `<i class="${i === lbSlide ? 'on' : ''}"></i>`).join('')
+      ? post.media.map((_, i) => `<button type="button" class="${i === lbSlide ? 'on' : ''}" data-slide="${i}" aria-label="${i + 1} / ${post.media.length}"${i === lbSlide ? ' aria-current="true"' : ''}><i></i></button>`).join('')
       : '';
     $('lbPrev').disabled = lbPost === 0 && lbSlide === 0;
     $('lbNext').disabled = lbPost === visible.length - 1 && lbSlide === post.media.length - 1;
@@ -398,6 +441,22 @@
     }
     showSlide();
   }
+  // jump straight to the next/previous work, skipping the rest of a multi-photo post
+  function jumpPost(dir) {
+    const np = lbPost + dir;
+    if (np < 0 || np >= visible.length) return;
+    lbPost = np;
+    lbSlide = 0;
+    showSlide();
+  }
+  $('lbDots').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-slide]');
+    if (!b) return;
+    lbSlide = +b.dataset.slide;
+    showSlide();
+    const again = $('lbDots').querySelector(`[data-slide="${lbSlide}"]`);
+    if (again) again.focus();
+  });
   $('lbNext').onclick = () => step(1);
   $('lbPrev').onclick = () => step(-1);
   $('lbClose').onclick = closeLightbox;
@@ -407,8 +466,10 @@
   addEventListener('keydown', (e) => {
     if (lb.hidden) return;
     if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowRight') step(1);
-    if (e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'ArrowRight') { if (e.shiftKey) jumpPost(1); else step(1); }
+    if (e.key === 'ArrowLeft') { if (e.shiftKey) jumpPost(-1); else step(-1); }
+    if (e.key === 'PageDown') { e.preventDefault(); jumpPost(1); }
+    if (e.key === 'PageUp') { e.preventDefault(); jumpPost(-1); }
     if (e.key === 'Tab') { // keep focus inside the viewer
       const items = [...lb.querySelectorAll('button:not([disabled]), a[href]:not([hidden]), video')]
         .filter((el) => el.offsetParent !== null);
@@ -419,14 +480,20 @@
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
   });
-  let touchX = null;
-  $('lbStage').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  // swipe sideways = next/previous photo, swipe up = next work, swipe down = close
+  let touch = null;
+  $('lbStage').addEventListener('touchstart', (e) => {
+    touch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: true });
   $('lbStage').addEventListener('touchend', (e) => {
-    if (touchX === null) return;
-    const dx = e.changedTouches[0].clientX - touchX;
-    touchX = null;
-    if (Math.abs(dx) < 40) return;
-    step(dx < 0 ? 1 : -1);
+    if (!touch) return;
+    const dx = e.changedTouches[0].clientX - touch.x;
+    const dy = e.changedTouches[0].clientY - touch.y;
+    touch = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 50) return;
+    if (Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
+    else if (dy > 0) closeLightbox();
+    else jumpPost(1);
   });
 
   $('year').textContent = new Date().getFullYear();

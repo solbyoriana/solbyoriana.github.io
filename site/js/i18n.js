@@ -3,6 +3,8 @@ window.SOL_STRINGS = {
   he: {
     toggle: 'EN',
     switchLang: 'Switch to English',
+    toLight: 'מעבר למצב בהיר',
+    toDark: 'מעבר למצב כהה',
     locale: 'he-IL',
     title: 'SOL by Oriana · אמנות ציפורניים בראשון לציון',
     skip: 'דילוג לעבודות',
@@ -33,6 +35,8 @@ window.SOL_STRINGS = {
   en: {
     toggle: 'עברית',
     switchLang: 'מעבר לעברית',
+    toLight: 'Switch to light mode',
+    toDark: 'Switch to dark mode',
     locale: 'en-GB',
     title: 'SOL by Oriana · Nail art in Rishon LeZion',
     skip: 'Skip to the work',

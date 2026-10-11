@@ -1,5 +1,5 @@
 [
-  {"id":"nailart","he":"ציורים","en":"Nail art","tags":["nailart","naildesign","handpainted","ציוריםעלציפורניים","ציוריםבגל"],"keywords":["ציור","צוייר","מכחול","nail art"],"filter":true},
+  {"id":"nailart","he":"ציורים","en":"Hand-painted","tags":["nailart","naildesign","handpainted","ציוריםעלציפורניים","ציוריםבגל"],"keywords":["ציור","צוייר","מכחול","nail art"],"filter":true},
   {"id":"french","he":"פרנץ'","en":"French","tags":["french","frenchnails","frenchtips","frenchmanicure","פרנץ"],"keywords":["פרנץ","french"],"filter":true},
   {"id":"chrome","he":"כרום","en":"Chrome","tags":["chrome","chromenails","chromepowder","כרום"],"keywords":["כרום","chrome","פנינה","פנינים"],"filter":{"he":"כרום ועין חתול","en":"Chrome & cat eye"},"includes":["cateye"]},
   {"id":"glitter","he":"נצנצים","en":"Glitter","tags":["glitter","glitternails","sparkle","נצנצים"],"keywords":["נצנצ","גליטר","glitter"],"filter":true},
