@@ -18,7 +18,7 @@ const FIELDS = 'id,caption,media_type,media_url,thumbnail_url,permalink,timestam
 
 let token = process.env.IG_TOKEN;
 if (!token) {
-  console.log('IG_TOKEN is not set — skipping Instagram sync (site keeps its current content).');
+  console.log('IG_TOKEN is not set or empty — skipping Instagram sync (site keeps its current content).');
   process.exit(0);
 }
 
