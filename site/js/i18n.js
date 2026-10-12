@@ -25,7 +25,7 @@ window.SOL_STRINGS = {
     reelsTitle: 'סרטונים',
     reelsText: 'הברק, התנועה והפרטים הקטנים — כמו שהם באמת נראים.',
     aboutTitle: 'נעים להכיר, אני אוריאנה',
-    aboutImgAlt: 'סט ציפורניים בסגול עין חתול עם כוכבים בכרום זהב וירח מצויר ביד',
+    aboutImgAlt: 'סט ציפורניים מצויר במכחולים בהשראת בובספוג, באומברה צהוב־אדום־סגול',
     about: [
       'מאחורי SOL עומדת אהבה גדולה לפרטים הקטנים. כל סט מתחיל אצלי בשיחה — מה אוהבים, איזה וייב, מה הידיים רוצות להגיד — וממשיך בעבודה איטית ומדויקת, הרבה פעמים עם מכחול דק ביד.',
       'אני אוהבת לשלב ציורים בעבודת יד, קישוטים ותלת־ממד, כרום ועין חתול, על בסיס של בנייה חזקה ונקייה — כדי שהציפורניים ייראו מדהים וגם יחזיקו.',
@@ -98,7 +98,7 @@ window.SOL_STRINGS = {
     reelsTitle: 'Videos',
     reelsText: 'The shine, the movement and the small details — the way they really look.',
     aboutTitle: 'Hi, I’m Oriana',
-    aboutImgAlt: 'A purple cat-eye set with gold chrome stars and a hand-painted moon',
+    aboutImgAlt: 'A brush-painted SpongeBob-inspired set on a yellow-red-purple ombré',
     about: [
       'Behind SOL is a big love for small details. Every set starts with a conversation — what you love, the vibe, what you want your hands to say — and continues with slow, precise work, often with a fine brush in hand.',
       'I love combining hand-painted art, embellishments and 3D, chrome and cat eye, on a strong, clean base — so your nails look amazing and last.',
