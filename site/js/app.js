@@ -61,6 +61,7 @@
     $('heroCount').textContent = s.works(posts.length);
     if (typeof redrawSparkles === 'function') redrawSparkles(); // the info line width just changed
     applyTheme();
+    renderSections();
     renderFilters();
     grid.querySelectorAll('.tile').forEach((tile) => labelTile(tile, visible[+tile.dataset.i]));
     if (!$('lightbox').hidden) showSlide();
@@ -123,6 +124,8 @@
     $('sampleNote').hidden = !posts.some((x) => x.sample);
     applyLang();
     render();
+    buildBanner();
+    buildReels();
   }
   $('retryBtn').addEventListener('click', load);
 
@@ -362,14 +365,16 @@
   const lb = $('lightbox');
   let lbPost = 0;
   let lbSlide = 0;
+  let lbList = []; // the gallery or the reels row, whichever the viewer was opened from
   let returnFocus = null;
 
   // everything outside the viewer is made inert while it's open
   const setBackgroundInert = (on) => document.querySelectorAll('body > :not(#lightbox):not(script)')
     .forEach((el) => { el.inert = on; });
 
-  function openLightbox(i, from) {
+  function openLightbox(i, from, list = visible) {
     stopAll();
+    lbList = list;
     lbPost = i;
     lbSlide = 0;
     returnFocus = from || document.activeElement;
@@ -390,7 +395,7 @@
     if (!canHover && !reduceMotion) updateTopRow();
   }
   function showSlide() {
-    const post = visible[lbPost];
+    const post = lbList[lbPost];
     const m = post.media[lbSlide];
     const stage = $('lbStage');
     const names = catNames(post);
@@ -415,7 +420,7 @@
     const date = fmtDate(post.timestamp);
     lb.setAttribute('aria-label', [names.join(', ') || t().work, date].filter(Boolean).join(' · '));
     const slides = post.media.length > 1 ? ` · ${lbSlide + 1}/${post.media.length}` : '';
-    $('lbCounter').textContent = `${lbPost + 1} / ${visible.length}${slides}`;
+    $('lbCounter').textContent = `${lbPost + 1} / ${lbList.length}${slides}`;
     $('lbDate').textContent = [date, ...names].filter(Boolean).join(' · ');
     const caption = captionFor(post);
     $('lbCaption').textContent = caption;
@@ -428,24 +433,24 @@
       ? post.media.map((_, i) => `<button type="button" class="${i === lbSlide ? 'on' : ''}" data-slide="${i}" aria-label="${i + 1} / ${post.media.length}"${i === lbSlide ? ' aria-current="true"' : ''}><i></i></button>`).join('')
       : '';
     $('lbPrev').disabled = lbPost === 0 && lbSlide === 0;
-    $('lbNext').disabled = lbPost === visible.length - 1 && lbSlide === post.media.length - 1;
+    $('lbNext').disabled = lbPost === lbList.length - 1 && lbSlide === post.media.length - 1;
   }
   function step(dir) {
-    const post = visible[lbPost];
+    const post = lbList[lbPost];
     const next = lbSlide + dir;
     if (next >= 0 && next < post.media.length) { lbSlide = next; }
     else {
       const np = lbPost + dir;
-      if (np < 0 || np >= visible.length) return;
+      if (np < 0 || np >= lbList.length) return;
       lbPost = np;
-      lbSlide = dir > 0 ? 0 : visible[np].media.length - 1;
+      lbSlide = dir > 0 ? 0 : lbList[np].media.length - 1;
     }
     showSlide();
   }
   // jump straight to the next/previous work, skipping the rest of a multi-photo post
   function jumpPost(dir) {
     const np = lbPost + dir;
-    if (np < 0 || np >= visible.length) return;
+    if (np < 0 || np >= lbList.length) return;
     lbPost = np;
     lbSlide = 0;
     showSlide();
@@ -497,6 +502,120 @@
     else jumpPost(1);
   });
 
+  // ---------- page sections: menu, story, studio, FAQ (text comes from i18n.js) ----------
+  const ICON = {
+    home: '<path d="M4 11l8-6.5 8 6.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/>',
+    calendar: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/>',
+    shield: '<path d="M12 3.5l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9v-5z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+    brush: '<path d="M14.5 4.5l5 5-7.8 7.8-5-5z"/><path d="M6.7 12.3c-2 .3-3 1.8-3 3.8 0 1.6-.8 2.6-1.7 3.4 3.7.4 6.4-.6 7.2-3.2"/>',
+  };
+  const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function renderSections() {
+    const s = t();
+    document.querySelectorAll('[data-nav]').forEach((nav) => {
+      const inPanel = nav.classList.contains('panel-nav');
+      const hidden = nav.closest('#miniBar') && $('miniBar').getAttribute('aria-hidden') === 'true';
+      nav.innerHTML = s.nav.map(([id, label]) => `<a href="#${id}"${hidden ? ' tabindex="-1"' : ''}>${esc(label)}</a>`).join('');
+      if (inPanel) nav.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeMenu));
+    });
+    $('aboutImg').alt = s.aboutImgAlt;
+    $('aboutBody').innerHTML = s.about.map((p) => `<p>${esc(p)}</p>`).join('');
+    $('facts').innerHTML = s.facts.map(([icon, text]) => `<li><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[icon]}</svg><span>${esc(text)}</span></li>`).join('');
+    $('services').innerHTML = s.services.map(([name, line]) => `<li><b>${esc(name)}</b><span>${esc(line)}</span></li>`).join('');
+    const open = [...$('faqList').querySelectorAll('details')].map((d) => d.open);
+    $('faqList').innerHTML = s.faq.map(([q, a], i) => `<details${open[i] ? ' open' : ''}><summary>${esc(q)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>${
+      Array.isArray(a) ? `<ul>${a.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(a)}</p>`}</details>`).join('');
+  }
+
+  // ---------- phone menu panel ----------
+  const panel = $('menuPanel');
+  let menuReturn = null;
+  function openMenu(e) {
+    menuReturn = e && e.currentTarget;
+    panel.hidden = false;
+    document.body.classList.add('menu-open');
+    document.querySelectorAll('.menu-btn').forEach((b) => b.setAttribute('aria-expanded', 'true'));
+    $('menuClose').focus();
+  }
+  function closeMenu() {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    document.body.classList.remove('menu-open');
+    document.querySelectorAll('.menu-btn').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+    if (menuReturn && document.contains(menuReturn)) menuReturn.focus({ preventScroll: true });
+  }
+  document.querySelectorAll('.menu-btn').forEach((b) => b.addEventListener('click', openMenu));
+  $('menuClose').addEventListener('click', closeMenu);
+  addEventListener('keydown', (e) => {
+    if (panel.hidden) return;
+    if (e.key === 'Escape') closeMenu();
+    if (e.key === 'Tab') { // keep focus inside the panel
+      const items = [...panel.querySelectorAll('a, button')];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  // ---------- photo banner: the first 3 pinned works, slowly cross-fading ----------
+  let bannerTimer = null;
+  function buildBanner() {
+    const slides = posts.filter((p) => !p.sample).slice(0, 3);
+    const box = $('bannerSlides');
+    box.innerHTML = slides.map((p, i) => {
+      const m = p.media[0];
+      return `<img src="${m.type === 'video' ? m.poster : m.src}" alt="" class="${i === 0 ? 'on' : ''}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} decoding="async">`;
+    }).join('');
+    clearInterval(bannerTimer);
+    if (slides.length < 2 || reduceMotion) return;
+    let i = 0;
+    bannerTimer = setInterval(() => {
+      if (document.hidden) return;
+      const imgs = box.querySelectorAll('img');
+      imgs[i].classList.remove('on');
+      i = (i + 1) % imgs.length;
+      imgs[i].classList.add('on');
+    }, 5000);
+  }
+
+  // ---------- reels row: the newest videos, automatically ----------
+  let reels = [];
+  function buildReels() {
+    reels = posts
+      .filter((p) => !p.sample && p.media[0].type === 'video' && !p.media[0].external)
+      .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+      .slice(0, 10);
+    $('reels').hidden = reels.length === 0;
+    const row = $('reelsRow');
+    row.innerHTML = '';
+    reels.forEach((p, i) => {
+      const m = p.media[0];
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'reel';
+      b.setAttribute('aria-label', [catNames(p).join(', ') || t().work, fmtDate(p.timestamp)].filter(Boolean).join(' · '));
+      b.innerHTML = `<img src="${m.poster}" alt="" loading="lazy" decoding="async"><span class="reel-play" aria-hidden="true">${ICONS.video}</span>`;
+      if (!reduceMotion) {
+        const v = document.createElement('video');
+        v.muted = true;
+        v.loop = true;
+        v.playsInline = true;
+        v.preload = 'none';
+        v.setAttribute('aria-hidden', 'true');
+        v.dataset.src = m.preview || m.src;
+        b.appendChild(v);
+        if (canHover) {
+          b.addEventListener('mouseenter', () => playTile(b));
+          b.addEventListener('mouseleave', () => stopTile(b));
+        }
+      }
+      b.addEventListener('click', () => { stopTile(b); openLightbox(i, b, reels); });
+      row.appendChild(b);
+    });
+  }
+
   // ---------- sparkles in the bright stripe ----------
   // Fills every empty part of the stripe with the logo's stars, keeping clear of the logo, text and buttons.
   // A fixed seed means the same pattern on every visit.
@@ -541,6 +660,7 @@
   document.querySelectorAll('.lang-toggle').forEach((b) => b.addEventListener('click', redrawSparkles));
 
   $('year').textContent = new Date().getFullYear();
+  renderSections(); // the story, studio and FAQ show even if the posts fail to load
   load();
   drawSparkles();
 })();
