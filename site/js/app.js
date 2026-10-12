@@ -94,9 +94,10 @@
     // placeholder tiles in the real layout (large first tile) so nothing jumps when photos arrive
     grid.innerHTML = Array.from({ length: 9 }, (_, i) => `<div class="tile skeleton${i === 0 ? ' feature' : ''}" aria-hidden="true"></div>`).join('');
     const get = (u) => fetch(u, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const [p, c, h, pin, cur] = await Promise.all(
-      ['content/posts.json', 'content/categories.json', 'content/hidden.json', 'content/pinned.json', 'content/curation.json'].map(get),
+    const [p, c, h, pin, cur, ban] = await Promise.all(
+      ['content/posts.json', 'content/categories.json', 'content/hidden.json', 'content/pinned.json', 'content/curation.json', 'content/banner.json'].map(get),
     );
+    bannerSets = (ban && ban.sets) || [];
     if (!p) {
       grid.innerHTML = '';
       $('loadError').hidden = false;
@@ -559,10 +560,19 @@
     }
   });
 
-  // ---------- photo banner: the first 3 pinned works, slowly cross-fading ----------
+  // ---------- photo banner: one hand-picked set of 3 per day (content/banner.json), looping; cross-fades within the day ----------
   let bannerTimer = null;
+  let bannerSets = [];
+  function todaysBannerPosts() {
+    const byCode = new Map(posts.map((p) => [shortcodeOf(p.permalink || ''), p]));
+    const sets = bannerSets.map((set) => set.map(shortcodeOf).map((c) => byCode.get(c)).filter(Boolean)).filter((set) => set.length);
+    if (!sets.length) return posts.filter((p) => !p.sample).slice(0, 3); // fallback: first pinned works
+    const now = new Date();
+    const day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5); // the visitor's calendar day
+    return sets[day % sets.length];
+  }
   function buildBanner() {
-    const slides = posts.filter((p) => !p.sample).slice(0, 3);
+    const slides = todaysBannerPosts();
     const box = $('bannerSlides');
     box.innerHTML = slides.map((p, i) => {
       const m = p.media[0];

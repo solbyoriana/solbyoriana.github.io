@@ -1,0 +1,25 @@
+{
+  "_help": "Sets of 3 posts for the photo banner at the top. One set is shown per day, in order, then it loops. Each set cross-fades between its 3 photos. Add or change sets with Instagram links.",
+  "sets": [
+    [
+      "https://www.instagram.com/p/DdDWqBkDpww/",
+      "https://www.instagram.com/p/DcL4ngCjrS0/",
+      "https://www.instagram.com/p/Dc_fbtKjlFF/"
+    ],
+    [
+      "https://www.instagram.com/p/DbFpuMxjrbo/",
+      "https://www.instagram.com/p/Dd3Y2lXiGl_/",
+      "https://www.instagram.com/p/Dc8yz8YDqs3/"
+    ],
+    [
+      "https://www.instagram.com/p/DcRCPZqDn_Q/",
+      "https://www.instagram.com/p/DbkXnJIjum9/",
+      "https://www.instagram.com/p/DdPDC7sjlMF/"
+    ],
+    [
+      "https://www.instagram.com/p/Dam0fnPjCAl/",
+      "https://www.instagram.com/p/DauVFn2jMo1/",
+      "https://www.instagram.com/p/DdGqEYKDl9w/"
+    ]
+  ]
+}
