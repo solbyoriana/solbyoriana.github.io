@@ -89,7 +89,7 @@ window.SOL_STRINGS = {
     menu: 'Menu',
     menuOpen: 'Open menu',
     nav: [['work', 'Work'], ['reels', 'Videos'], ['about', 'About'], ['studio', 'Studio'], ['faq', 'FAQ'], ['contact', 'Contact']],
-    bannerTitle: 'Art, made by hand',
+    bannerTitle: 'Hand made art',
     bannerCta: 'See the work',
     workTitle: 'My work',
     filtersLabel: 'Filter by style',
