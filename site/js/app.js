@@ -576,14 +576,16 @@
     const box = $('bannerSlides');
     box.innerHTML = slides.map((p, i) => {
       const m = p.media[0];
-      return `<img src="${m.type === 'video' ? m.poster : m.src}" alt="" class="${i === 0 ? 'on' : ''}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} decoding="async">`;
+      const src = m.type === 'video' ? m.poster : m.src;
+      const load = i ? 'loading="lazy"' : 'fetchpriority="high"';
+      return `<div class="slide${i === 0 ? ' on' : ''}"><img class="slide-fill" src="${src}" alt="" ${load} decoding="async"><img class="slide-photo" src="${src}" alt="" ${load} decoding="async"></div>`;
     }).join('');
     clearInterval(bannerTimer);
     if (slides.length < 2 || reduceMotion) return;
     let i = 0;
     bannerTimer = setInterval(() => {
       if (document.hidden) return;
-      const imgs = box.querySelectorAll('img');
+      const imgs = box.querySelectorAll('.slide');
       imgs[i].classList.remove('on');
       i = (i + 1) % imgs.length;
       imgs[i].classList.add('on');
