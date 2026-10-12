@@ -19,7 +19,7 @@ Save/commit it (on github.com you can edit the file with the pencil icon). The s
 Posts whose caption contains words like מדריך, מבצע, גוונים חדשים, ממומן (full list in `site/content/curation.json`) are kept off the website automatically. To show one anyway, add its link to `approved` in that file (or pin it).
 
 ## Photo banner (top of the page)
-The banner shows one set of 3 hand-picked posts per day, then moves to the next set the following day and loops (`site/content/banner.json`). Within the day it cross-fades between the 3 photos. To change the sets, edit the Instagram links in that file, or ask Claude.
+The banner shows one set of 3 hand-picked posts per day, then moves to the next set the following day and loops (`site/content/banner.json`). Within the day it cross-fades between the 3 photos. The reel is portrait, so photos are shown whole; light 1000px copies of the reel photos live in `site/assets/reel/` (a post without one falls back to its original). On wide screens, 12 close-ups of single nails (`site/assets/nails/`) are scattered on both sides. To change the sets or the close-ups, ask Claude.
 
 ## Pin your best work first
 Put Instagram links in `site/content/pinned.json` in the order you want them; they appear first in the gallery, and the first one is shown large. All other posts follow, newest first. Or ask Claude: "pin this post: <link>".

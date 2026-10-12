@@ -576,9 +576,12 @@
     const box = $('bannerSlides');
     box.innerHTML = slides.map((p, i) => {
       const m = p.media[0];
-      const src = m.type === 'video' ? m.poster : m.src;
+      const full = m.type === 'video' ? m.poster : m.src;
+      // a light 1000px copy made for the reel (assets/reel/<post>.jpg); falls back to the original if there isn't one
+      const src = `assets/reel/${shortcodeOf(p.permalink || '')}.jpg`;
+      const fallback = `onerror="this.onerror=null;this.src='${full}'"`;
       const load = i ? 'loading="lazy"' : 'fetchpriority="high"';
-      return `<div class="slide${i === 0 ? ' on' : ''}"><img class="slide-fill" src="${src}" alt="" ${load} decoding="async"><img class="slide-photo" src="${src}" alt="" ${load} decoding="async"></div>`;
+      return `<div class="slide${i === 0 ? ' on' : ''}"><img class="slide-fill" src="${src}" ${fallback} alt="" ${load} decoding="async"><img class="slide-photo" src="${src}" ${fallback} alt="" ${load} decoding="async"></div>`;
     }).join('');
     clearInterval(bannerTimer);
     if (slides.length < 2 || reduceMotion) return;
