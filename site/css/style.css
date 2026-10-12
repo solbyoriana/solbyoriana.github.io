@@ -397,17 +397,16 @@ section[id], footer[id] { scroll-margin-top: 64px; }
   position: relative; overflow: hidden; isolation: isolate; flex: none;
   width: min(100%, 440px); aspect-ratio: 4 / 5; border-radius: calc(var(--radius) + 6px); background: var(--tile);
 }
-.banner-side { display: none; }
-@media (min-width: 1024px) {
-  .banner { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: stretch; }
+/* "nice to meet you" sits next to the reel on wide screens, under it on phones */
+.banner { flex-direction: column; align-items: center; gap: 36px; }
+.banner-about { width: 100%; max-width: 560px; }
+.banner-about .about-body p:first-child { margin-top: 18px; }
+@media (min-width: 900px) {
+  .banner { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(40px, 6vw, 88px); align-items: center; max-width: var(--max); margin-inline: auto; padding: 0 var(--pad); }
   .banner-stage { width: auto; height: min(70vh, 600px); }
-  .banner-side { display: block; position: relative; }
-  .banner-side img {
-    position: absolute; left: var(--x); top: var(--y); width: var(--w); aspect-ratio: 3 / 4; object-fit: cover;
-    border-radius: 14px; transform: rotate(var(--r));
-    box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .55);
-  }
+  .banner-about { max-width: 560px; }
 }
+:lang(he) .banner-about .section-title { text-align: start; } /* her intro reads as one right-aligned block in Hebrew */
 /* each slide shows the whole photo, scaled to fit (never cropped); a blurred copy fills the rest of the frame */
 .banner-slides .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s ease; }
 .banner-slides .slide.on { opacity: 1; }
@@ -470,11 +469,7 @@ section[id], footer[id] { scroll-margin-top: 64px; }
 .reel-play svg { width: 18px; height: 18px; margin-left: 2px; }
 .reel.playing .reel-play { opacity: 0; }
 
-/* ---------- about ---------- */
-.about { display: grid; gap: 32px; align-items: center; }
-@media (min-width: 900px) { .about { grid-template-columns: 5fr 6fr; gap: clamp(40px, 6vw, 88px); } }
-.about-photo { margin: 0; aspect-ratio: 4 / 5; border-radius: calc(var(--radius) + 6px); overflow: hidden; background: var(--tile); max-width: 520px; width: 100%; justify-self: center; }
-.about-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* ---------- about (next to the reel) ---------- */
 .about-body p { margin: 16px 0 0; max-width: 56ch; font-size: 17px; line-height: 1.75; color: var(--muted); text-wrap: pretty; }
 .about-body p:first-child { color: var(--ink); }
 

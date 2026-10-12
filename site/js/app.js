@@ -520,7 +520,6 @@
       nav.innerHTML = s.nav.map(([id, label]) => `<a href="#${id}"${hidden ? ' tabindex="-1"' : ''}>${esc(label)}</a>`).join('');
       if (inPanel) nav.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeMenu));
     });
-    $('aboutImg').alt = s.aboutImgAlt;
     $('aboutBody').innerHTML = s.about.map((p) => `<p>${esc(p)}</p>`).join('');
     $('facts').innerHTML = s.facts.map(([icon, text]) => `<li><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[icon]}</svg><span>${esc(text)}</span></li>`).join('');
     $('services').innerHTML = s.services.map(([name, line]) => `<li><b>${esc(name)}</b><span>${esc(line)}</span></li>`).join('');
