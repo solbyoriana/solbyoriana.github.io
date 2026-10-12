@@ -634,13 +634,17 @@
     const free = (x, y, s) => x - s > 10 && x + s < W - 10 && y - s > 8 && y + s < H - 8
       && (x + s < colL || x - s > colR)
       && placed.every(([px, py, ps]) => Math.hypot(x - px, y - py) > s + ps + GAP);
-    let seed = 7;
+    // each grid cell gets its own fixed random numbers, so a sparkle never moves when the stripe's height
+    // changes (e.g. the intro line is longer in one language)
+    let seed = 1;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     const star = (x, y, s) => `<path d="M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}Z"/>`;
     const CELL = 62; // one sparkle per cell, jittered, so they spread evenly without looking gridded
     let out = '';
     for (let gy = 0; gy < H; gy += CELL) {
       for (let gx = 0; gx < W; gx += CELL) {
+        seed = (((gx / CELL + 1) * 73856093) ^ ((gy / CELL + 1) * 19349663) ^ 7) % 2147483646 + 1;
+        rnd(); // warm up
         const x = Math.round(gx + rnd() * CELL);
         const y = Math.round(gy + rnd() * CELL);
         const k = rnd();

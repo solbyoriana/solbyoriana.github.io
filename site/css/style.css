@@ -117,7 +117,7 @@ svg .fill { fill: currentColor; stroke: none; }
   margin: 0 auto; max-width: 34ch; font-family: var(--serif); font-size: clamp(17px, 2.4vw, 24px);
   line-height: 1.45; font-weight: 400; color: var(--ink); text-wrap: balance;
 }
-@media (min-width: 900px) { .intro { max-width: 62ch; font-size: 20px; } } /* one line on wide screens */
+@media (min-width: 900px) { .intro { max-width: none; font-size: 20px; } } /* one line on wide screens, in both languages (keeps the stripe the same height) */
 .meta-line {
   margin: 10px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px;
   font-size: 13px; color: var(--muted); letter-spacing: .02em;
@@ -493,4 +493,4 @@ section[id], footer[id] { scroll-margin-top: 64px; }
 .faq-list p, .faq-list ul { margin: 0 0 20px; color: var(--muted); font-size: 16px; line-height: 1.7; max-width: 64ch; }
 .faq-list ul { padding-inline-start: 1.2em; }
 .faq-list li + li { margin-top: 4px; }
-:lang(he) :is(.faq-list, .section-text) { margin-left: auto; } /* boxes line up under their right-aligned Hebrew headings */
+:lang(he) :is(.work-title, .section-title, .sub-title) { text-align: left; } /* headings sit on the left in both languages (the layout never flips) */
