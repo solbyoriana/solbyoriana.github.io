@@ -434,6 +434,17 @@ section[id], footer[id] { scroll-margin-top: 64px; }
 .banner-cta:active { transform: scale(.97); }
 .banner-cta svg { width: 18px; height: 18px; }
 .banner :focus-visible { outline-color: #f6f3ee; }
+/* pause / play for the reel (and the videos that play by themselves) */
+.motion-btn {
+  position: absolute; z-index: 2; top: 12px; right: 12px; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid rgba(246, 243, 238, .5); border-radius: 50%; background: rgba(14, 12, 11, .55); color: #f6f3ee; cursor: pointer;
+  transition: background-color .2s;
+}
+.motion-btn:hover { background: rgba(14, 12, 11, .8); }
+.motion-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.motion-btn .fill { fill: currentColor; stroke: none; }
+.motion-btn .i-play, .motion-btn.paused .i-pause { display: none; }
+.motion-btn.paused .i-play { display: block; }
 
 /* ---------- shared section type ---------- */
 .section { max-width: var(--max); margin: 0 auto; padding: clamp(72px, 10vw, 120px) var(--pad) 0; }
@@ -501,3 +512,22 @@ section[id], footer[id] { scroll-margin-top: 64px; }
 .faq-list ul { padding-inline-start: 1.2em; }
 .faq-list li + li { margin-top: 4px; }
 :lang(he) :is(.work-title, .section-title, .sub-title) { text-align: left; } /* headings sit on the left in both languages (the layout never flips) */
+
+/* ---------- accessibility statement page ---------- */
+.doc-page { min-height: 100vh; }
+.doc-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 760px; margin: 0 auto; padding: 18px var(--pad); }
+.doc-logo img { display: block; width: 120px; height: auto; }
+:root[data-theme="dark"] .doc-head { background: #F3F0EB; max-width: none; } /* the dark logo always sits on its cream stripe */
+:root[data-theme="dark"] .doc-head a { color: #161412; }
+.doc-switch { color: var(--ink); font-size: 14px; }
+.doc { max-width: 760px; margin: 0 auto; padding: 24px var(--pad) 72px; line-height: 1.7; }
+.doc article + article { margin-top: 72px; padding-top: 48px; border-top: 1px solid var(--line); }
+.doc h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(30px, 6vw, 40px); line-height: 1.15; margin: 8px 0 18px; }
+.doc h2 { font-family: var(--serif); font-weight: 400; font-size: 22px; margin: 36px 0 8px; }
+.doc p, .doc li { font-size: 16px; color: var(--ink); }
+.doc ul { padding-inline-start: 1.2em; margin: 0; }
+.doc li + li { margin-top: 6px; }
+.doc a { color: var(--ink); }
+.doc-contact { list-style: none; padding: 0 !important; }
+.doc-date { margin-top: 36px; font-size: 14px; color: var(--muted) !important; }
+.doc-back { margin-top: 56px; }

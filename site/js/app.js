@@ -8,6 +8,9 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let lang = 'he';
+  // the visitor can stop everything that moves by itself (the reel, phone video previews); remembered on this device
+  let motionPaused = false;
+  try { motionPaused = localStorage.getItem('sol-motion') === 'off'; } catch {}
   try { lang = localStorage.getItem('sol-lang') || 'he'; } catch {}
   let posts = [];
   let categories = [];
@@ -58,6 +61,20 @@
     document.querySelectorAll('[data-i18n-label]').forEach((el) => el.setAttribute('aria-label', s[el.dataset.i18nLabel]));
     $('waButton').href = waLink(s.waMessage);
     $('waFloat').href = waLink(s.waMessage);
+    // tell screen-reader users which links open a new tab
+    document.querySelectorAll('a[target="_blank"]').forEach((a) => {
+      const label = a.getAttribute('aria-label');
+      if (label !== null) {
+        if (!a.dataset.i18nLabel) a.dataset.base ??= label;
+        a.setAttribute('aria-label', `${a.dataset.i18nLabel ? label : a.dataset.base} (${s.newTab})`);
+      } else {
+        let note = a.querySelector('.nt');
+        if (!note) { note = document.createElement('span'); note.className = 'sr-only nt'; a.append(note); }
+        note.textContent = ` (${s.newTab})`;
+      }
+    });
+    $('motionBtn').setAttribute('aria-label', motionPaused ? s.playMotion : s.pauseMotion);
+    $('motionBtn').classList.toggle('paused', motionPaused);
     $('heroCount').textContent = s.works(posts.length);
     if (typeof redrawSparkles === 'function') redrawSparkles(); // the info line width just changed
     applyTheme();
@@ -323,6 +340,7 @@
   // Touch devices: autoplay (muted) the videos in the topmost row that is mostly on screen.
   function updateTopRow() {
     if (!$('lightbox').hidden) return;
+    if (motionPaused) { stopAll(); return; }
     const vh = window.innerHeight;
     let rowTop = null;
     for (const tile of grid.children) {
@@ -582,17 +600,28 @@
       const load = i ? 'loading="lazy"' : 'fetchpriority="high"';
       return `<div class="slide${i === 0 ? ' on' : ''}"><img class="slide-fill" src="${src}" ${fallback} alt="" ${load} decoding="async"><img class="slide-photo" src="${src}" ${fallback} alt="" ${load} decoding="async"></div>`;
     }).join('');
+    $('motionBtn').hidden = slides.length < 2 || reduceMotion;
+    startBanner();
+  }
+  function startBanner() {
     clearInterval(bannerTimer);
-    if (slides.length < 2 || reduceMotion) return;
-    let i = 0;
+    const imgs = $('bannerSlides').querySelectorAll('.slide');
+    if (imgs.length < 2 || reduceMotion || motionPaused) return;
     bannerTimer = setInterval(() => {
       if (document.hidden) return;
-      const imgs = box.querySelectorAll('.slide');
+      const i = [...imgs].findIndex((el) => el.classList.contains('on'));
       imgs[i].classList.remove('on');
-      i = (i + 1) % imgs.length;
-      imgs[i].classList.add('on');
+      imgs[(i + 1) % imgs.length].classList.add('on');
     }, 5000);
   }
+  $('motionBtn').addEventListener('click', () => {
+    motionPaused = !motionPaused;
+    try { localStorage.setItem('sol-motion', motionPaused ? 'off' : 'on'); } catch {}
+    $('motionBtn').setAttribute('aria-label', motionPaused ? t().playMotion : t().pauseMotion);
+    $('motionBtn').classList.toggle('paused', motionPaused);
+    if (motionPaused) { clearInterval(bannerTimer); stopAll(); }
+    else { startBanner(); if (!canHover) updateTopRow(); }
+  });
 
   // ---------- reels row: the newest videos, automatically ----------
   let reels = [];

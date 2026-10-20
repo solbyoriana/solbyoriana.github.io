@@ -78,6 +78,11 @@
           <h2 class="banner-title" id="bannerTitle" data-i18n="bannerTitle"></h2>
           <a class="banner-cta" href="#work"><span data-i18n="bannerCta"></span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
         </div>
+        <!-- stops the reel and the videos that play by themselves (accessibility: pause, stop, hide) -->
+        <button class="motion-btn" id="motionBtn" type="button" hidden>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg>
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" class="fill"/></svg>
+        </button>
       </div>
       <div class="banner-about" id="about">
         <h2 class="section-title" id="aboutTitle" data-i18n="aboutTitle"></h2>
@@ -136,6 +141,7 @@
         </li>
         <li><a href="https://www.instagram.com/solbyoriana/" target="_blank" rel="noopener">Instagram</a></li>
         <li><a href="https://www.tiktok.com/@solbyoriana" target="_blank" rel="noopener">TikTok</a></li>
+        <li><a href="accessibility.html" data-i18n="a11y"></a></li>
       </ul>
       <p class="copyright">© <span id="year"></span> SOL by Oriana</p>
     </div>
@@ -144,7 +150,7 @@
   <div class="menu-panel" id="menuPanel" hidden role="dialog" aria-modal="true" data-i18n-label="menu">
     <button class="menu-close" id="menuClose" type="button" data-i18n-label="close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <nav class="panel-nav" data-nav aria-label="Sections"></nav>
-    <p class="panel-foot"><a href="https://www.instagram.com/solbyoriana/" target="_blank" rel="noopener">Instagram</a> · <a href="https://www.tiktok.com/@solbyoriana" target="_blank" rel="noopener">TikTok</a></p>
+    <p class="panel-foot"><a href="https://www.instagram.com/solbyoriana/" target="_blank" rel="noopener">Instagram</a> · <a href="https://www.tiktok.com/@solbyoriana" target="_blank" rel="noopener">TikTok</a> · <a href="accessibility.html" data-i18n="a11y"></a></p>
   </div>
 
   <a class="wa-float" id="waFloat" href="#" target="_blank" rel="noopener" data-i18n-label="whatsapp">
