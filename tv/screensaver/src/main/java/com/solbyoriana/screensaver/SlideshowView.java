@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Full-screen nail-art slideshow: each photo whole and centred on a darkened blur of itself,
- * random order, a slow fade every 10 seconds, and the SOL logo as a rounded card in the right-hand blur strip,
+ * random order, a slow fade every 10 seconds, and the SOL logo as a round badge in the right-hand blur strip,
  * centred between the photo's right edge and the screen's right edge.
  * Built for a 1 GB TV: photos are decoded at screen size and only two are held in memory.
  */
@@ -258,7 +258,7 @@ final class SlideshowView extends View {
         }
     }
 
-    /** The square SOL logo (black on its cream background) cut into a rounded square of the given size. */
+    /** The square SOL logo (black on its cream background) cut into a circle of the given diameter. */
     private static Bitmap logoCard(android.content.res.Resources res, int size) {
         size = Math.max(1, size > 0 ? size : 200);
         BitmapFactory.Options o = new BitmapFactory.Options();
@@ -270,8 +270,7 @@ final class SlideshowView extends View {
         Bitmap card = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         p.setShader(new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-        float r = size * 0.14f;
-        new Canvas(card).drawRoundRect(0, 0, size, size, r, r, p);
+        new Canvas(card).drawCircle(size / 2f, size / 2f, size / 2f, p);
         scaled.recycle();
         return card;
     }
