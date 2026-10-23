@@ -197,18 +197,43 @@ final class SlideshowView extends View {
         Bitmap photo = BitmapFactory.decodeFile(f.getPath(), o);
         if (photo == null) return null;
 
-        // Cheap blur: shrink to a few dozen pixels, then grow back with smoothing.
-        int tw = 24, th = Math.max(1, Math.round(24f * photo.getHeight() / photo.getWidth()));
+        // Blur: shrink to 48 px wide, box-blur three times (close to a gaussian) and darken, then let
+        // the GPU stretch it to full screen. Smooth enough that the stretch shows no blocks.
+        int tw = 48, th = Math.max(1, Math.round(48f * photo.getHeight() / photo.getWidth()));
         Bitmap tiny = Bitmap.createScaledBitmap(photo, tw, th, true);
-        Bitmap blur = Bitmap.createScaledBitmap(tiny, tw * 4, th * 4, true);
-        if (tiny != blur) tiny.recycle();
-        if (!blur.isMutable()) {
-            Bitmap m = blur.copy(Bitmap.Config.ARGB_8888, true);
-            blur.recycle();
-            blur = m;
+        int[] px = new int[tw * th];
+        tiny.getPixels(px, 0, tw, 0, 0, tw, th);
+        if (tiny != photo) tiny.recycle();
+        for (int pass = 0; pass < 3; pass++) boxBlur(px, tw, th, 3);
+        int keep = 255 - DIM_ALPHA;
+        for (int i = 0; i < px.length; i++) {
+            int c = px[i];
+            px[i] = 0xff000000 | ((((c >> 16) & 0xff) * keep / 255) << 16)
+                    | ((((c >> 8) & 0xff) * keep / 255) << 8) | ((c & 0xff) * keep / 255);
         }
-        new Canvas(blur).drawColor(Color.argb(DIM_ALPHA, 0, 0, 0));
-        return new Slide(photo, blur);
+        return new Slide(photo, Bitmap.createBitmap(px, tw, th, Bitmap.Config.ARGB_8888));
+    }
+
+    private static void boxBlur(int[] px, int w, int h, int r) {
+        int[] tmp = new int[px.length];
+        for (int pass = 0; pass < 2; pass++) {
+            boolean horizontal = pass == 0;
+            int[] in = horizontal ? px : tmp, out = horizontal ? tmp : px;
+            int lines = horizontal ? h : w, len = horizontal ? w : h;
+            for (int line = 0; line < lines; line++) {
+                for (int i = 0; i < len; i++) {
+                    int rs = 0, gs = 0, bs = 0, n = 0;
+                    for (int k = Math.max(0, i - r); k <= Math.min(len - 1, i + r); k++) {
+                        int c = in[horizontal ? line * w + k : k * w + line];
+                        rs += (c >> 16) & 0xff;
+                        gs += (c >> 8) & 0xff;
+                        bs += c & 0xff;
+                        n++;
+                    }
+                    out[horizontal ? line * w + i : i * w + line] = 0xff000000 | (rs / n << 16) | (gs / n << 8) | (bs / n);
+                }
+            }
+        }
     }
 
     /** The website logo turned white: dark ink becomes white, anything light or transparent becomes see-through. */

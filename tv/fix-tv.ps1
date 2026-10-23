@@ -20,9 +20,10 @@ $off = @(
 foreach ($p in $off) { & $adb -s $Tv shell pm disable-user --user 0 $p | Out-Host }
 
 if ($Apk) {
-    & $adb -s $Tv install -r $Apk | Out-Host
+    # Straight onto the USB stick (pm move-package is refused while the TV's spare user profile is locked).
     $stick = (& $adb -s $Tv shell sm list-volumes private) -match '^private:' | ForEach-Object { ($_ -split ' ')[-1] } | Select-Object -First 1
-    if ($stick) { & $adb -s $Tv shell pm move-package com.solbyoriana.screensaver $stick | Out-Host }
+    & $adb -s $Tv push $Apk /data/local/tmp/sol.apk | Out-Host
+    & $adb -s $Tv shell "pm install -r --user 0 --force-uuid $stick /data/local/tmp/sol.apk; rm /data/local/tmp/sol.apk" | Out-Host
 }
 
 & $adb -s $Tv shell @'
