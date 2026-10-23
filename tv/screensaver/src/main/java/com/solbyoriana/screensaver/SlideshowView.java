@@ -4,11 +4,13 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -22,7 +24,8 @@ import java.util.concurrent.Executors;
 
 /**
  * Full-screen nail-art slideshow: each photo whole and centred on a darkened blur of itself,
- * random order, a slow fade every 10 seconds, and the white SOL logo in the bottom-right blur strip.
+ * random order, a slow fade every 10 seconds, and the SOL logo as a rounded card in the right-hand blur strip,
+ * centred between the photo's right edge and the screen's right edge.
  * Built for a 1 GB TV: photos are decoded at screen size and only two are held in memory.
  */
 final class SlideshowView extends View {
@@ -30,7 +33,6 @@ final class SlideshowView extends View {
     private static final long FADE_MS = 1_500;
     private static final long EMPTY_RETRY_MS = 30_000;
     private static final int DIM_ALPHA = 90;        // ~35% black over the blur
-    private static final int LOGO_ALPHA = 217;      // 85%
 
     private static final class Slide {
         final Bitmap photo, blur;
@@ -62,7 +64,7 @@ final class SlideshowView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         if (w == 0 || h == 0) return;
         if (logo != null) logo.recycle();
-        logo = whiteLogo(getResources(), Math.round(band(w, h) * 0.75f));
+        logo = logoCard(getResources(), Math.round(band(w, h) * 0.75f));
         if (!running) {
             running = true;
             loadNext();
@@ -153,16 +155,27 @@ final class SlideshowView extends View {
         if (current != null) drawSlide(canvas, current, 255, w, h);
         if (next != null && fade > 0f) drawSlide(canvas, next, Math.round(255 * fade), w, h);
         if (logo == null) return;
-        paint.setAlpha(LOGO_ALPHA);
+        paint.setAlpha(255);
         if (current == null) {
             // Nothing saved yet (first run, still downloading): just the logo, centred.
             canvas.drawBitmap(logo, (w - logo.getWidth()) / 2f, (h - logo.getHeight()) / 2f, paint);
         } else {
-            int band = band(w, h);
-            float x = w - band / 2f - logo.getWidth() / 2f;
+            // Midway between the photo's right edge and the screen's; glides with the fade when photo widths differ.
+            float edge = photoRight(current, w, h);
+            if (next != null) edge += (photoRight(next, w, h) - edge) * fade;
+            float x = (edge + w) / 2f - logo.getWidth() / 2f;
             float y = h - h * 0.07f - logo.getHeight();
             canvas.drawBitmap(logo, x, y, paint);
         }
+    }
+
+    /** Photo scale: whole, fitted inside the centred h×h square. */
+    private static float fit(Bitmap p, int w, int h) {
+        return Math.min((float) Math.min(w, h) / p.getWidth(), (float) h / p.getHeight());
+    }
+
+    private static float photoRight(Slide s, int w, int h) {
+        return (w + s.photo.getWidth() * fit(s.photo, w, h)) / 2f;
     }
 
     private void drawSlide(Canvas canvas, Slide s, int alpha, int w, int h) {
@@ -175,9 +188,8 @@ final class SlideshowView extends View {
                 Math.round((b.getWidth() + cw) / 2), Math.round((b.getHeight() + ch) / 2));
         dst.set(0, 0, w, h);
         canvas.drawBitmap(b, src, dst, paint);
-        // Photo: whole, fitted inside the centred h×h square.
         Bitmap p = s.photo;
-        float fit = Math.min((float) Math.min(w, h) / p.getWidth(), (float) h / p.getHeight());
+        float fit = fit(p, w, h);
         float pw = p.getWidth() * fit, ph = p.getHeight() * fit;
         dst.set((w - pw) / 2, (h - ph) / 2, (w + pw) / 2, (h + ph) / 2);
         canvas.drawBitmap(p, null, dst, paint);
@@ -236,26 +248,21 @@ final class SlideshowView extends View {
         }
     }
 
-    /** The website logo turned white: dark ink becomes white, anything light or transparent becomes see-through. */
-    private static Bitmap whiteLogo(android.content.res.Resources res, int targetWidth) {
+    /** The square SOL logo (black on its cream background) cut into a rounded square of the given size. */
+    private static Bitmap logoCard(android.content.res.Resources res, int size) {
+        size = Math.max(1, size > 0 ? size : 200);
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inScaled = false;
+        o.inSampleSize = 2; // 1563 px source; half is still sharper than any card size on a TV
         Bitmap src = BitmapFactory.decodeResource(res, R.drawable.sol_logo, o);
-        int w = src.getWidth(), h = src.getHeight();
-        int[] px = new int[w * h];
-        src.getPixels(px, 0, w, 0, 0, w, h);
-        src.recycle();
-        for (int i = 0; i < px.length; i++) {
-            int c = px[i];
-            int a = c >>> 24;
-            int lum = (299 * ((c >> 16) & 0xff) + 587 * ((c >> 8) & 0xff) + 114 * (c & 0xff)) / 1000;
-            int ink = Math.max(0, Math.min(255, (200 - lum) * 255 / 140));
-            px[i] = (Math.min(a, ink) << 24) | 0xffffff;
-        }
-        Bitmap white = Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888);
-        int tw = Math.max(1, targetWidth > 0 ? targetWidth : w / 4);
-        Bitmap scaled = Bitmap.createScaledBitmap(white, tw, Math.max(1, Math.round((float) tw * h / w)), true);
-        if (scaled != white) white.recycle();
-        return scaled;
+        Bitmap scaled = Bitmap.createScaledBitmap(src, size, size, true);
+        if (scaled != src) src.recycle();
+        Bitmap card = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        p.setShader(new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        float r = size * 0.14f;
+        new Canvas(card).drawRoundRect(0, 0, size, size, r, r, p);
+        scaled.recycle();
+        return card;
     }
 }
