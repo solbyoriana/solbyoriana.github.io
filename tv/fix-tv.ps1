@@ -20,6 +20,9 @@ $off = @(
 foreach ($p in $off) { & $adb -s $Tv shell pm disable-user --user 0 $p | Out-Host }
 
 if ($Apk) {
+    # Wake the TV first: replacing the app while its screensaver runs ends the screensaver, and Android then
+    # puts the TV to sleep (which also unmounts the USB stick).
+    & $adb -s $Tv shell input keyevent KEYCODE_WAKEUP | Out-Host
     # Straight onto the USB stick (pm move-package is refused while the TV's spare user profile is locked).
     $stick = (& $adb -s $Tv shell sm list-volumes private) -match '^private:' | ForEach-Object { ($_ -split ' ')[-1] } | Select-Object -First 1
     & $adb -s $Tv push $Apk /data/local/tmp/sol.apk | Out-Host
@@ -31,7 +34,9 @@ settings put global window_animation_scale 0.5
 settings put global transition_animation_scale 0.5
 settings put global animator_duration_scale 0.5
 settings put system screen_off_timeout 300000
-settings put secure sleep_timeout 14400000
+settings put secure sleep_timeout -1
+settings put secure attentive_timeout -1
+settings put global no_signal_auto_power_off 0
 settings put secure screensaver_enabled 1
 settings put secure screensaver_components com.solbyoriana.screensaver/.SolDream
 settings put secure screensaver_default_component com.solbyoriana.screensaver/.SolDream

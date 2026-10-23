@@ -64,7 +64,7 @@ final class PhotoStore {
             try {
                 sync();
                 prefs.edit().putLong("last", System.currentTimeMillis()).apply();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 Log.w(TAG, "Refresh failed, keeping the saved photos", e);
             } finally {
                 syncing.set(false);

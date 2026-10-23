@@ -64,7 +64,11 @@ final class SlideshowView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         if (w == 0 || h == 0) return;
         if (logo != null) logo.recycle();
-        logo = logoCard(getResources(), Math.round(band(w, h) * 0.75f));
+        try {
+            logo = logoCard(getResources(), Math.round(band(w, h) * 0.75f));
+        } catch (Throwable t) {
+            logo = null; // photos without the logo beat a crashed screensaver
+        }
         if (!running) {
             running = true;
             loadNext();
@@ -97,7 +101,13 @@ final class SlideshowView extends View {
             for (int tries = 0; s == null && tries < 5; tries++) {
                 File f = nextFile();
                 if (f == null) break;
-                s = decode(f, w, h);
+                // If the screensaver ever crashes, Android puts the TV to sleep, so a bad photo (or running
+                // out of memory on this 1 GB TV) only skips that photo.
+                try {
+                    s = decode(f, w, h);
+                } catch (Throwable t) {
+                    android.util.Log.w("SolSlideshow", "Skipping " + f.getName(), t);
+                }
             }
             final Slide loaded = s;
             main.post(() -> {
