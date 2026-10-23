@@ -8,3 +8,8 @@ site/media/*.orig.mp4
 .claude/agents/
 .claude/settings.local.json
 .impeccable/
+
+# TV screensaver build output
+tv/screensaver/build/
+tv/screensaver/.gradle/
+*.p12

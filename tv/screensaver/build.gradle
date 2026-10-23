@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application' version '8.5.2'
+}
+
+android {
+    namespace 'com.solbyoriana.screensaver'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.solbyoriana.screensaver'
+        minSdk 26
+        targetSdk 34
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName '1.0'
+    }
+
+    // The same key every build, so new versions install over the old one without losing the saved photos.
+    // It lives in the repo's secrets (SOL_KEYSTORE / SOL_KEYSTORE_PASS), never in the code.
+    signingConfigs {
+        sol {
+            storeFile file(System.getenv('SOL_KEYSTORE_FILE') ?: 'missing.p12')
+            storePassword System.getenv('SOL_KEYSTORE_PASS')
+            keyAlias 'sol'
+            keyPassword System.getenv('SOL_KEYSTORE_PASS')
+            storeType 'pkcs12'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            signingConfig signingConfigs.sol
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
