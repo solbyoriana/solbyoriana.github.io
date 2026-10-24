@@ -102,17 +102,16 @@ svg .fill { fill: currentColor; stroke: none; }
   left: max(var(--pad), calc((100% - var(--max)) / 2 + var(--pad)));
   right: max(var(--pad), calc((100% - var(--max)) / 2 + var(--pad)));
 }
-.logo { position: relative; margin: 46px auto 16px; width: min(240px, 60vw); }
+.logo { position: relative; margin: 46px auto 16px; width: min(180px, 48vw); }
 @media (min-width: 900px) {
   .hero { padding-bottom: 26px; }
-  .logo { width: 300px; margin: 6px auto 18px; }
+  .logo { width: 210px; margin: 6px auto 18px; }
 }
 /* ornaments: sparkles taken from the logo, scattered through the empty parts of the bright stripe */
 .ornament { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; fill: var(--ink); opacity: .45; }
 @media (min-width: 1024px) { .ornament { display: block; } } /* phones/tablets: no empty sides to fill */
-.logo img { width: 100%; height: auto; }
-/* the logo file has a cream background baked in; "darken" makes it vanish into any cream/blurred surface */
-.logo img, .mini-logo img { mix-blend-mode: darken; }
+.logo img { display: block; width: 100%; height: auto; }
+/* the round logo brings its own white disc and gold ring; the corners around it are transparent */
 .intro {
   margin: 0 auto; max-width: 34ch; font-family: var(--serif); font-size: clamp(17px, 2.4vw, 24px);
   line-height: 1.45; font-weight: 400; color: var(--ink); text-wrap: balance;
@@ -136,7 +135,7 @@ svg .fill { fill: currentColor; stroke: none; }
 .mini-bar.show { transform: none; }
 .mini-inner { max-width: var(--max); margin: 0 auto; height: 56px; padding: 0 var(--pad); }
 .mini-logo { position: absolute; left: 50%; transform: translateX(-50%); }
-.mini-logo img { height: 34px; width: auto; }
+.mini-logo img { display: block; height: 44px; width: auto; }
 
 /* ---------- work section ---------- */
 main { max-width: var(--max); margin: 0 auto; }
@@ -516,7 +515,7 @@ section[id], footer[id] { scroll-margin-top: 64px; }
 /* ---------- accessibility statement page ---------- */
 .doc-page { min-height: 100vh; }
 .doc-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 760px; margin: 0 auto; padding: 18px var(--pad); }
-.doc-logo img { display: block; width: 120px; height: auto; }
+.doc-logo img { display: block; width: 72px; height: auto; }
 :root[data-theme="dark"] .doc-head { background: #F3F0EB; max-width: none; } /* the dark logo always sits on its cream stripe */
 :root[data-theme="dark"] .doc-head a { color: #161412; }
 .doc-switch { color: var(--ink); font-size: 14px; }

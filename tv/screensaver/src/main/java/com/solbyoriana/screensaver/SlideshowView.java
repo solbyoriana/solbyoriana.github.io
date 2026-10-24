@@ -4,13 +4,11 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -65,7 +63,7 @@ final class SlideshowView extends View {
         if (w == 0 || h == 0) return;
         if (logo != null) logo.recycle();
         try {
-            logo = logoCard(getResources(), Math.round(band(w, h) * 0.75f));
+            logo = logoBadge(getResources(), Math.round(band(w, h) * 0.75f));
         } catch (Throwable t) {
             logo = null; // photos without the logo beat a crashed screensaver
         }
@@ -258,20 +256,14 @@ final class SlideshowView extends View {
         }
     }
 
-    /** The square SOL logo (black on its cream background) cut into a circle of the given diameter. */
-    private static Bitmap logoCard(android.content.res.Resources res, int size) {
+    /** The round SOL logo (white disc, gold ring, transparent corners) at the given diameter. */
+    private static Bitmap logoBadge(android.content.res.Resources res, int size) {
         size = Math.max(1, size > 0 ? size : 200);
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inScaled = false;
-        o.inSampleSize = 2; // 1563 px source; half is still sharper than any card size on a TV
         Bitmap src = BitmapFactory.decodeResource(res, R.drawable.sol_logo, o);
         Bitmap scaled = Bitmap.createScaledBitmap(src, size, size, true);
         if (scaled != src) src.recycle();
-        Bitmap card = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        p.setShader(new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-        new Canvas(card).drawCircle(size / 2f, size / 2f, size / 2f, p);
-        scaled.recycle();
-        return card;
+        return scaled;
     }
 }
