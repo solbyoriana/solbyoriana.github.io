@@ -14,17 +14,21 @@ import android.view.View;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 /**
  * Halloween decorations drawn over the slideshow, only in the blur strips beside the photo:
- * pumpkin garlands in both top corners, a "Happy Halloween" sign planted in grass bottom-left,
- * and bats that come in rounds. Port of tv/bat-preview.html; the rules are the same:
- * a round every 10-20 min picks 0-3 bats, never 3 flying or 3 resting at once, one bat per perch,
- * and a round's set of bats never repeats either of the two sets before it.
+ * pumpkin garlands in both top corners, a "Happy Halloween" sign planted in grass bottom-left, and bats.
+ *
+ * Bat rules (set by the studio owner):
+ * - Flying bats are the round white-eyed bat, 3-7 of them. Resting bats (hanging/sleeping under the garlands)
+ *   are the classic, gothic and glowing-eyes bats, 2-5 of them, one per perch. At most 8 bats in all.
+ * - Every 10-20 minutes a round picks new counts; a round's counts never repeat either of the two rounds before it.
+ * - The two sides are never even (2+2, 3+3, 4+4). When they are, a flying bat switches sides Pac-Man style:
+ *   out through the outer edge of its side, back in through the outer edge of the other. Flying bats keep to the
+ *   side strips and only now and then cross over the nail photo.
  */
 final class HalloweenLayer extends View {
 
@@ -37,23 +41,15 @@ final class HalloweenLayer extends View {
 
     // Everything is laid out in the TV's 1280x720 design space and scaled to the real screen.
     private static final float DH = 720f, S = 2f, BAND = 280f;
-    private static final int MAX_BATS = 3, MAX_FLYING = 2, MAX_RESTING = 2, NO_REPEAT = 2;
-    private static final float ROUND_MIN = 10 * 60, ROUND_MAX = 20 * 60, LIFE_MIN = 4 * 60, LIFE_MAX = 9 * 60;
-    private static final int FLY = 0, LEAVE = 1, AWAY = 2, TO_PERCH = 3, HANG = 4, SLEEP = 5, EXIT = 6, GONE = 7;
-    private static final int CLASSIC = 0, CUTE = 1, GOTHIC = 2, EYES = 3, IMAGE = 4;
+    private static final int FLY_MIN = 3, FLY_MAX = 7, REST_MIN = 2, REST_MAX = 5, MAX_BATS = 8, NO_REPEAT = 2;
+    private static final float ROUND_MIN = 10 * 60, ROUND_MAX = 20 * 60;
+    private static final int FLY = 0, WRAP = 1, TO_PERCH = 2, HANG = 3, SLEEP = 4, EXIT = 5, GONE = 6;
+    private static final int CLASSIC = 0, CUTE = 1, GOTHIC = 2, EYES = 3;
     private static final int INK = Color.rgb(13, 11, 10), ORANGE = Color.rgb(255, 154, 31);
+    private static final int[] RESTING_KINDS = {CLASSIC, GOTHIC, EYES};
 
     // Kept for the whole process, so the no-repeat rule holds across screensaver sessions.
-    private static final List<String> recentSets = new ArrayList<>();
-
-    private static final class Type {
-        final String name; final int kind; final Bitmap img; final float width, flapHz, speed;
-        final boolean perches, glide, tilted;
-        Type(String name, int kind, Bitmap img, float width, float flapHz, float speed, boolean perches, boolean glide, boolean tilted) {
-            this.name = name; this.kind = kind; this.img = img; this.width = width; this.flapHz = flapHz; this.speed = speed;
-            this.perches = perches; this.glide = glide; this.tilted = tilted;
-        }
-    }
+    private static final List<String> recentRounds = new ArrayList<>();
 
     private static final class Perch {
         final float x, y; Bat owner;
@@ -61,10 +57,15 @@ final class HalloweenLayer extends View {
     }
 
     private static final class Bat {
-        final Type v; int state = AWAY;
-        float x = -100, y = 200, vx, vy, tx, ty, t, timer, life;
+        final boolean flyer; final int kind; final float flapHz, speed; final boolean glide;
+        int state; float x, y, vx, vy, tx, ty, t, timer;
         Perch perch;
-        Bat(Type v) { this.v = v; }
+        Bat(boolean flyer, int kind) {
+            this.flyer = flyer; this.kind = kind;
+            flapHz = kind == CUTE ? 4.5f : kind == GOTHIC ? 5 : 7;
+            speed = kind == CUTE ? 230 : kind == GOTHIC ? 340 : 300;
+            glide = kind == GOTHIC;
+        }
     }
 
     private final Random rnd = new Random();
@@ -74,11 +75,11 @@ final class HalloweenLayer extends View {
     private final Paint zPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
     private final RectF r = new RectF();
-    private final List<Type> pool = new ArrayList<>();
     private final List<Bat> bats = new ArrayList<>();
-    private final Perch[] perches;
+    private final Perch[] perches = new Perch[8];
     private Bitmap garland, sign, grass;
-    private float k = 1f, dw = 1280f, clock, nextRound;
+    private float k = 1f, dw = 1280f, clock, nextRound, adjustIn;
+    private int targetFly, targetRest;
     private long lastFrame;
     private boolean running;
 
@@ -88,23 +89,12 @@ final class HalloweenLayer extends View {
         garland = load(res, R.drawable.halloween_garland);
         sign = load(res, R.drawable.halloween_sign);
         grass = load(res, R.drawable.halloween_grass);
-        pool.add(new Type("A classic", CLASSIC, null, 0, 7, 300, true, false, false));
-        pool.add(new Type("B cute", CUTE, null, 0, 4.5f, 230, true, false, false));
-        pool.add(new Type("C gothic", GOTHIC, null, 0, 5, 340, true, true, false));
-        pool.add(new Type("D glowing eyes", EYES, null, 0, 7, 300, true, false, false));
-        pool.add(new Type("E silhouette", IMAGE, load(res, R.drawable.bat_e), 110, 6, 300, false, false, false));
-        pool.add(new Type("F swooper", IMAGE, load(res, R.drawable.bat_f), 110, 5, 320, false, false, true));
-        pool.add(new Type("G little one", IMAGE, load(res, R.drawable.bat_g), 80, 8, 280, false, false, false));
-        pool.add(new Type("H wide wings", IMAGE, load(res, R.drawable.bat_h), 120, 5, 300, false, false, false));
-        pool.add(new Type("I glossy", IMAGE, load(res, R.drawable.bat_i), 105, 6, 300, false, false, true));
-        perches = new Perch[]{new Perch(160, 120), new Perch(90, 116), new Perch(0, 120), new Perch(0, 116)};
         ink.setColor(INK);
         feet.setColor(INK);
         feet.setStyle(Paint.Style.STROKE);
         feet.setStrokeWidth(1.4f);
         zPaint.setColor(Color.rgb(239, 232, 220));
         zPaint.setFakeBoldText(true);
-        nextRound = 5 + rnd.nextFloat() * 55;      // first round soon after the screensaver starts
     }
 
     private static Bitmap load(Resources res, int id) {
@@ -122,9 +112,12 @@ final class HalloweenLayer extends View {
         if (w == 0 || h == 0) return;
         k = h / DH;
         dw = w / k;
-        // right-hand perches mirror the left ones
-        perches[2] = new Perch(dw - 160, 120);
-        perches[3] = new Perch(dw - 90, 116);
+        // four spots under each garland's branch (bat's feet), mirrored on the right
+        float[][] left = {{45, 112}, {100, 116}, {160, 120}, {220, 118}};
+        for (int i = 0; i < 4; i++) {
+            perches[i] = new Perch(left[i][0], left[i][1]);
+            perches[i + 4] = new Perch(dw - left[i][0], left[i][1]);
+        }
         running = true;
         lastFrame = SystemClock.uptimeMillis();
         invalidate();
@@ -136,78 +129,177 @@ final class HalloweenLayer extends View {
         running = false;
     }
 
-    // ---------- rounds and rules ----------
-
-    private int count(int... states) {
-        int n = 0;
-        for (Bat b : bats) for (int s : states) if (b.state == s) { n++; break; }
-        return n;
-    }
-
-    // A bat heading to a perch is still in the air, and its perch is already taken, so it counts in both.
-    private boolean canFly() { return count(FLY, LEAVE, TO_PERCH, EXIT) < MAX_FLYING; }
-    private boolean canRest() { return count(TO_PERCH, HANG, SLEEP) < MAX_RESTING; }
+    // ---------- rounds and counts ----------
 
     private float rnd(float a, float b) { return a + rnd.nextFloat() * (b - a); }
-
-    private static String setKey(List<Type> types) {
-        List<String> names = new ArrayList<>();
-        for (Type t : types) names.add(t.name);
-        Collections.sort(names);
-        return names.isEmpty() ? "no bats" : String.join(" + ", names);
-    }
-
-    private int forcedNext = -1;
-
-    /** Test hook (PreviewActivity "batRound" extra): the first round starts at once with this many bats. */
-    void startWithRound(int batCount) {
-        forcedNext = Math.max(0, Math.min(MAX_BATS, batCount));
-        nextRound = 0;
-    }
+    private int rndInt(int a, int b) { return a + rnd.nextInt(b - a + 1); }
 
     private void startRound() {
-        int forced = forcedNext;
-        forcedNext = -1;
-        int free = MAX_BATS - bats.size();
-        List<Type> available = new ArrayList<>();
-        for (Type t : pool) {
-            boolean onScreen = false;
-            for (Bat b : bats) if (b.v == t) { onScreen = true; break; }
-            if (!onScreen) available.add(t);
+        for (int tries = 0; tries < 100; tries++) {
+            int f = rndInt(FLY_MIN, FLY_MAX), rr = rndInt(REST_MIN, REST_MAX);
+            if (f + rr > MAX_BATS) continue;
+            String key = f + " flying + " + rr + " resting";
+            if (recentRounds.contains(key)) continue;
+            targetFly = f;
+            targetRest = rr;
+            recentRounds.add(0, key);
+            while (recentRounds.size() > NO_REPEAT) recentRounds.remove(recentRounds.size() - 1);
+            break;
         }
-        List<Type> choices = null;
-        for (int tries = 0; tries < 60 && choices == null; tries++) {
-            int n = Math.min(Math.min(free, available.size()), forced >= 0 ? forced : rnd.nextInt(MAX_BATS + 1));  // 0, 1, 2 or 3
-            Collections.shuffle(available, rnd);
-            List<Type> pick = new ArrayList<>(available.subList(0, n));
-            if (!recentSets.contains(setKey(pick))) choices = pick;
-        }
-        if (choices == null) { nextRound = clock + 60; return; }  // last round's bats still around: try again in a minute
-        for (Type t : choices) {
-            Bat b = new Bat(t);
-            b.t = rnd(0, 10);
-            b.timer = rnd(0, 4);      // waits just off screen, flies in when the flying limit allows
-            b.life = rnd(LIFE_MIN, LIFE_MAX);
-            bats.add(b);
-        }
-        recentSets.add(0, setKey(choices));
-        while (recentSets.size() > NO_REPEAT) recentSets.remove(recentSets.size() - 1);
         nextRound = clock + rnd(ROUND_MIN, ROUND_MAX);
     }
 
-    // Flying targets live in the side strips; now and then a bat crosses over the photo to the other side.
-    private void pickTarget(Bat b, boolean otherSide) {
-        boolean onLeft = b.x < dw / 2;
-        boolean goLeft = otherSide ? !onLeft : (b.x < 0 || (b.x <= dw && onLeft));
-        b.tx = goLeft ? rnd(30, BAND - 40) : rnd(dw - BAND + 40, dw - 30);
+    private boolean active(Bat b) { return b.state != EXIT && b.state != GONE; }
+
+    private int countRole(boolean flyers) {
+        int n = 0;
+        for (Bat b : bats) if (b.flyer == flyers && active(b)) n++;
+        return n;
+    }
+
+    /** Bats on screen per side: [left, right]. */
+    private int[] sides() {
+        int[] s = new int[2];
+        for (Bat b : bats) {
+            if (b.state == GONE || b.x < 0 || b.x > dw) continue;
+            s[b.x < dw / 2 ? 0 : 1]++;
+        }
+        return s;
+    }
+
+    /** Which side a newcomer should use so the two sides end up uneven; the emptier side when both work. */
+    private boolean pickLeft(boolean leftAllowed, boolean rightAllowed) {
+        int[] s = sides();
+        boolean leftOk = leftAllowed && s[0] + 1 != s[1], rightOk = rightAllowed && s[1] + 1 != s[0];
+        if (leftOk && rightOk) return s[0] == s[1] ? rnd.nextBoolean() : s[0] < s[1];
+        if (leftOk) return true;
+        if (rightOk) return false;
+        return leftAllowed;
+    }
+
+    /** Would moving this bat to the other side keep the sides uneven and within 3 of each other? */
+    private boolean switchKeepsBalance(Bat b) {
+        int[] s = sides();
+        int from = b.x < dw / 2 ? 0 : 1;
+        if (b.x >= 0 && b.x <= dw) s[from]--;
+        s[1 - from]++;
+        return s[0] != s[1] && Math.abs(s[0] - s[1]) <= 3;
+    }
+
+    /** A bat whose leaving keeps the sides uneven, if there is one (random among those). */
+    private Bat pickLeaver(boolean flyers, int... states) {
+        int[] s = sides();
+        List<Bat> good = new ArrayList<>(), any = new ArrayList<>();
+        for (Bat b : bats) {
+            if (b.flyer != flyers) continue;
+            boolean match = false;
+            for (int st : states) if (b.state == st) { match = true; break; }
+            if (!match) continue;
+            any.add(b);
+            int side = b.x < dw / 2 ? 0 : 1;
+            int l = s[0] - (side == 0 ? 1 : 0), rr = s[1] - (side == 1 ? 1 : 0);
+            if (l != rr || l < 2) good.add(b);
+        }
+        List<Bat> from = good.isEmpty() ? any : good;
+        return from.isEmpty() ? null : from.get(rnd.nextInt(from.size()));
+    }
+
+    /** One step toward the round's counts every few seconds: leavers first, so the total never passes 8. */
+    private void adjust() {
+        int flyers = countRole(true), resters = countRole(false), total = 0;
+        for (Bat b : bats) if (b.state != GONE) total++;      // bats still flying out count too
+        if (flyers > targetFly) {
+            Bat b = pickLeaver(true, FLY);
+            if (b != null) exit(b);
+        } else if (resters > targetRest) {
+            Bat b = pickLeaver(false, SLEEP, HANG);
+            if (b != null) exit(b);
+        } else if (flyers < targetFly && total < MAX_BATS) {
+            Bat b = new Bat(true, CUTE);
+            boolean left = pickLeft(true, true);
+            enter(b, left);
+            b.state = FLY;
+            pickTarget(b, left);
+            bats.add(b);
+        } else if (resters < targetRest && total < MAX_BATS) {
+            boolean leftFree = freePerch(true) != null, rightFree = freePerch(false) != null;
+            if (!leftFree && !rightFree) return;
+            boolean left = pickLeft(leftFree, rightFree);
+            Bat b = new Bat(false, RESTING_KINDS[rnd.nextInt(RESTING_KINDS.length)]);
+            enter(b, left);
+            claim(b, freePerch(left));
+            bats.add(b);
+        }
+    }
+
+    /** Starts just past the outer edge of a side. */
+    private void enter(Bat b, boolean left) {
+        b.x = left ? -60 : dw + 60;
+        b.y = rnd(60, 380);
+        b.t = rnd(0, 10);
+        b.timer = rnd(15, 30);
+    }
+
+    /** Leaves through the outer edge of its own side (dropping off its perch first if it was resting). */
+    private void exit(Bat b) {
+        boolean perched = b.state == HANG || b.state == SLEEP;
+        release(b);
+        b.state = EXIT;
+        b.tx = b.x < dw / 2 ? -120 : dw + 120;
+        b.ty = rnd(60, 300);
+        if (perched) b.vy = 140;
+    }
+
+    private Perch freePerch(boolean left) {
+        List<Perch> open = new ArrayList<>();
+        for (Perch p : perches) if (p != null && p.owner == null && (p.x < dw / 2) == left) open.add(p);
+        return open.isEmpty() ? null : open.get(rnd.nextInt(open.size()));
+    }
+
+    private void claim(Bat b, Perch p) {
+        b.perch = p;
+        p.owner = b;
+        b.tx = p.x;
+        b.ty = p.y;
+        b.state = TO_PERCH;
+    }
+
+    private static void release(Bat b) {
+        if (b.perch != null) { b.perch.owner = null; b.perch = null; }
+    }
+
+    /** If the sides are even, one flying bat switches sides Pac-Man style (one at a time). */
+    private void keepSidesUneven() {
+        for (Bat b : bats) if (b.state == WRAP) return;
+        int[] s = sides();
+        if (s[0] != s[1] || s[0] < 2) return;
+        Bat b = null;                                   // the flying bat nearest its outer edge fixes it fastest
+        float best = Float.MAX_VALUE;
+        for (Bat c : bats) {
+            if (!c.flyer || c.state != FLY || c.x < 0 || c.x > dw) continue;
+            float edge = Math.min(c.x, dw - c.x);
+            if (edge < best) { best = edge; b = c; }
+        }
+        if (b == null) return;
+        b.state = WRAP;
+        b.tx = b.x < dw / 2 ? -80 : dw + 80;   // out through the outer edge of its side
+        b.ty = b.y + rnd(-60, 60);
+    }
+
+    // ---------- movement ----------
+
+    // Flying targets live in the side strips; now and then a bat crosses over the photo instead.
+    private void pickTarget(Bat b, boolean left) {
+        b.tx = left ? rnd(30, BAND - 40) : rnd(dw - BAND + 40, dw - 30);
         b.ty = rnd(40, 470);                          // stays above the sign and the logo
     }
 
     private float steer(Bat b, float dt, boolean arrive) {
         float dx = b.tx - b.x, dy = b.ty - b.y, d = (float) Math.hypot(dx, dy);
         if (d < 0.001f) d = 0.001f;
-        float sp = b.v.speed;
+        float sp = b.speed;
         if (b.x > BAND && b.x < dw - BAND) sp *= 1.5f;  // over the nail photo: hurry across
+        if (b.state == WRAP) sp *= 1.6f;                // switching sides: be quick about it
         if (arrive && d < 140) sp *= Math.max(0.15f, d / 140);
         float kk = Math.min(1, dt * 2.2f);
         b.vx += (dx / d * sp - b.vx) * kk;
@@ -217,69 +309,45 @@ final class HalloweenLayer extends View {
         return d;
     }
 
-    private Perch freePerch() {
-        List<Perch> open = new ArrayList<>();
-        for (Perch p : perches) if (p.owner == null) open.add(p);
-        return open.isEmpty() ? null : open.get(rnd.nextInt(open.size()));
-    }
-
-    private static void release(Bat b) {
-        if (b.perch != null) { b.perch.owner = null; b.perch = null; }
-    }
-
     private void update(Bat b, float dt) {
-        b.t += dt; b.timer -= dt; b.life -= dt;
-        if (b.life <= 0 && b.state != EXIT && b.state != GONE) {
-            if (b.state == AWAY) { b.state = GONE; return; }
-            boolean perched = b.state == HANG || b.state == SLEEP;
-            if (!perched || canFly()) {                // a perched bat waits for room in the air before it leaves
-                release(b);
-                b.state = EXIT;
-                b.tx = b.x < dw / 2 ? -120 : dw + 120;
-                b.ty = rnd(60, 300);
-                if (perched) b.vy = 140;               // drop off the perch, then fly away
-            }
-        }
+        b.t += dt;
+        b.timer -= dt;
         switch (b.state) {
             case FLY:
-                if (steer(b, dt, false) < 40) pickTarget(b, rnd.nextFloat() < 0.025f);
-                if (b.timer <= 0) {
+                if (steer(b, dt, false) < 40) {
+                    boolean onLeft = b.x < dw / 2;
                     float r = rnd.nextFloat();
-                    Perch spot = b.v.perches && canRest() ? freePerch() : null;
-                    if (spot != null && r < 0.45f) { b.perch = spot; spot.owner = b; b.tx = spot.x; b.ty = spot.y; b.state = TO_PERCH; }
-                    else if (r < 0.75f) { b.tx = b.x < dw / 2 ? -120 : dw + 120; b.ty = rnd(60, 400); b.state = LEAVE; }
-                    else b.timer = rnd(10, 20);
+                    boolean canSwitch = switchKeepsBalance(b);
+                    if (r < 0.012f && canSwitch) pickTarget(b, !onLeft);          // rare crossover over the photo
+                    else if (r < 0.03f && canSwitch) {                            // side switch the Pac-Man way
+                        b.state = WRAP;
+                        b.tx = onLeft ? -80 : dw + 80;
+                        b.ty = b.y + rnd(-60, 60);
+                    } else pickTarget(b, onLeft);
                 }
                 break;
-            case LEAVE:
-                if (steer(b, dt, false) < 30) { b.state = AWAY; b.timer = rnd(8, 25); }
-                break;
-            case AWAY:
-                if (b.timer <= 0) {
-                    if (!canFly()) { b.timer = rnd(3, 8); break; }  // two already flying: try again shortly
-                    b.x = rnd.nextBoolean() ? -100 : dw + 100;
-                    b.y = rnd(60, 380);
-                    b.vx = b.vy = 0;
-                    pickTarget(b, false);
+            case WRAP:
+                if (b.x < -60 || b.x > dw + 60) {                     // off one edge: come back from the other
+                    boolean nowLeft = b.x > dw;
+                    b.x = nowLeft ? -60 : dw + 60;
                     b.state = FLY;
-                    b.timer = rnd(15, 30);
-                }
+                    pickTarget(b, nowLeft);
+                } else steer(b, dt, false);
                 break;
             case TO_PERCH:
                 if (steer(b, dt, true) < 4) { b.x = b.perch.x; b.y = b.perch.y; b.vx = b.vy = 0; b.state = HANG; b.timer = rnd(6, 14); }
                 break;
             case HANG:
-                if (b.timer <= 0) { b.state = SLEEP; b.timer = rnd(25, 70); }
+                if (b.timer <= 0) { b.state = SLEEP; b.timer = rnd(40, 120); }
                 break;
             case SLEEP:
-                if (b.timer <= 0 && !canFly()) b.timer = rnd(5, 12);  // two already flying: sleep a little longer
-                else if (b.timer <= 0) {
-                    release(b);
-                    b.state = FLY;
-                    b.vy = 140;
-                    b.vx = b.x < dw / 2 ? 80 : -80;
-                    pickTarget(b, rnd.nextFloat() < 0.15f);
-                    b.timer = rnd(15, 30);
+                if (b.timer <= 0) {
+                    Perch other = freePerch(b.x < dw / 2);
+                    if (other != null && rnd.nextBoolean()) {         // wake up and move to another spot on the same side
+                        release(b);
+                        b.vy = 100;
+                        claim(b, other);
+                    } else { b.state = HANG; b.timer = rnd(6, 14); }
                 }
                 break;
             case EXIT:
@@ -298,19 +366,19 @@ final class HalloweenLayer extends View {
         lastFrame = now;
         clock += dt;
         if (clock >= nextRound) startRound();
+        adjustIn -= dt;
+        if (adjustIn <= 0) { adjust(); adjustIn = rnd(1.5f, 3); }
         for (Iterator<Bat> it = bats.iterator(); it.hasNext(); ) {
             Bat b = it.next();
             update(b, dt);
             if (b.state == GONE) it.remove();
         }
+        keepSidesUneven();
 
         canvas.save();
         canvas.scale(k, k);
         drawDecorations(canvas);
-        boolean visible = false;
         for (Bat b : bats) {
-            if (b.state == AWAY) continue;
-            visible = true;
             if (b.state == HANG || b.state == SLEEP) {
                 drawHanging(canvas, b, b.state == SLEEP);
                 if (b.state == SLEEP) drawZzz(canvas, b);
@@ -319,8 +387,7 @@ final class HalloweenLayer extends View {
             }
         }
         canvas.restore();
-        // ~30 fps while a bat is on screen; otherwise just keep the clock ticking
-        postInvalidateDelayed(visible ? 33 : 500);
+        postInvalidateDelayed(33);                     // ~30 fps; there are always bats now
     }
 
     private void drawDecorations(Canvas c) {
@@ -346,8 +413,8 @@ final class HalloweenLayer extends View {
     }
 
     private float flapOf(Bat b) {
-        if (b.v.glide && b.t % 2.6f > 1.0f) return 0.15f + (float) Math.sin(b.t * 2) * 0.05f;
-        return (float) Math.sin(b.t * Math.PI * 2 * b.v.flapHz);
+        if (b.glide && b.t % 2.6f > 1.0f) return 0.15f + (float) Math.sin(b.t * 2) * 0.05f;
+        return (float) Math.sin(b.t * Math.PI * 2 * b.flapHz);
     }
 
     private void drawFlying(Canvas c, Bat b) {
@@ -356,12 +423,11 @@ final class HalloweenLayer extends View {
         c.translate(b.x, b.y + (float) Math.sin(b.t * 3) * 5);
         c.scale(S, S);
         c.rotate((float) Math.toDegrees(Math.max(-0.35f, Math.min(0.35f, b.vx / 1200))));
-        switch (b.v.kind) {
+        switch (b.kind) {
             case CLASSIC: classic(c, f); break;
-            case EYES: classic(c, f); eyes(c, -8.5f, 1.2f, ORANGE); break;
+            case EYES: classic(c, f); eyes(c, -8.5f, 1.2f, ORANGE, 1.7f); break;
             case CUTE: cute(c, f); break;
             case GOTHIC: gothic(c, f); break;
-            case IMAGE: image(c, f, b); break;
         }
         c.restore();
     }
@@ -422,8 +488,6 @@ final class HalloweenLayer extends View {
         eyes(c, -1.5f, 1.8f, Color.WHITE, 3);
     }
 
-    private void eyes(Canvas c, float y, float radius, int color) { eyes(c, y, radius, color, 1.7f); }
-
     private void eyes(Canvas c, float y, float radius, int color, float spread) {
         int old = ink.getColor();
         ink.setColor(color);
@@ -432,38 +496,22 @@ final class HalloweenLayer extends View {
         ink.setColor(old);
     }
 
-    /** Wingbeats for a single-pose image: squash it flat and stretch it back. Tilted ones face their direction of flight. */
-    private void image(Canvas c, float f, Bat b) {
-        Bitmap img = b.v.img;
-        if (img == null) return;
-        float w = b.v.width / S, h = w * img.getHeight() / img.getWidth(), sy = 0.4f + 0.6f * (f + 1) / 2;
-        c.save();
-        if (b.v.tilted && b.vx > 0) c.scale(-1, 1);
-        r.set(-w / 2, -h * sy / 2, w / 2, h * sy / 2);
-        c.drawBitmap(img, null, r, art);
-        c.restore();
-    }
-
     /** Hanging upside down, wings wrapped. The only motion is a slow sway on one sine wave, so the loop is seamless. */
     private void drawHanging(Canvas c, Bat b, boolean asleep) {
-        boolean cute = b.v.kind == CUTE;
         c.save();
         c.translate(b.x, b.y);
         c.scale(S, S);
         c.rotate((float) Math.toDegrees(Math.sin(b.t * 1.3) * 0.06));
         c.drawLine(-2, 0, -2.5f, 5, feet);
         c.drawLine(2, 0, 2.5f, 5, feet);
-        if (cute) c.drawOval(-9, 4, 9, 26, ink); else c.drawOval(-7, 3, 7, 27, ink);
-        float hy = cute ? 26 : 28;
-        c.drawCircle(0, hy, cute ? 6 : 4.2f, ink);
+        c.drawOval(-7, 3, 7, 27, ink);
+        float hy = 28;
+        c.drawCircle(0, hy, 4.2f, ink);
         path.reset();
         path.moveTo(-3.5f, hy + 1); path.lineTo(-3.5f, hy + 8); path.lineTo(-0.8f, hy + 3); path.close();
         path.moveTo(3.5f, hy + 1); path.lineTo(3.5f, hy + 8); path.lineTo(0.8f, hy + 3); path.close();
         c.drawPath(path, ink);
-        if (!asleep) {
-            if (b.v.kind == EYES) eyes(c, hy + 0.5f, 1.1f, ORANGE);
-            else if (cute) eyes(c, hy + 0.5f, 1.1f, Color.WHITE);
-        }
+        if (!asleep && b.kind == EYES) eyes(c, hy + 0.5f, 1.1f, ORANGE, 1.7f);
         c.restore();
     }
 

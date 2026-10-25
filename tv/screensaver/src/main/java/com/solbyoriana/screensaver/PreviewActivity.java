@@ -7,9 +7,8 @@ import android.widget.FrameLayout;
 
 /**
  * The same slideshow as a normal screen, for checking it without waiting 5 minutes:
- *   adb shell am start -n com.solbyoriana.screensaver/.PreviewActivity [--ez refresh true] [--ez halloween true|false] [--ei batRound 3]
+ *   adb shell am start -n com.solbyoriana.screensaver/.PreviewActivity [--ez refresh true] [--ez halloween true|false]
  * "halloween" forces the Halloween layer on or off; without it, the date decides (as in the screensaver).
- * "batRound" starts the first bat round at once with that many bats (0-3).
  */
 public class PreviewActivity extends Activity {
     @Override
@@ -24,11 +23,7 @@ public class PreviewActivity extends Activity {
         boolean halloween = getIntent().hasExtra("halloween")
                 ? getIntent().getBooleanExtra("halloween", false)
                 : HalloweenLayer.inSeason();
-        if (halloween) {
-            HalloweenLayer layer = new HalloweenLayer(this);
-            if (getIntent().hasExtra("batRound")) layer.startWithRound(getIntent().getIntExtra("batRound", 3));
-            root.addView(layer);
-        }
+        if (halloween) root.addView(new HalloweenLayer(this));
         setContentView(root);
     }
 }
