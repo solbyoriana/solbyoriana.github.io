@@ -157,7 +157,17 @@ final class HalloweenLayer extends View {
         return names.isEmpty() ? "no bats" : String.join(" + ", names);
     }
 
+    private int forcedNext = -1;
+
+    /** Test hook (PreviewActivity "batRound" extra): the first round starts at once with this many bats. */
+    void startWithRound(int batCount) {
+        forcedNext = Math.max(0, Math.min(MAX_BATS, batCount));
+        nextRound = 0;
+    }
+
     private void startRound() {
+        int forced = forcedNext;
+        forcedNext = -1;
         int free = MAX_BATS - bats.size();
         List<Type> available = new ArrayList<>();
         for (Type t : pool) {
@@ -167,7 +177,7 @@ final class HalloweenLayer extends View {
         }
         List<Type> choices = null;
         for (int tries = 0; tries < 60 && choices == null; tries++) {
-            int n = Math.min(Math.min(free, available.size()), rnd.nextInt(MAX_BATS + 1));  // 0, 1, 2 or 3
+            int n = Math.min(Math.min(free, available.size()), forced >= 0 ? forced : rnd.nextInt(MAX_BATS + 1));  // 0, 1, 2 or 3
             Collections.shuffle(available, rnd);
             List<Type> pick = new ArrayList<>(available.subList(0, n));
             if (!recentSets.contains(setKey(pick))) choices = pick;
