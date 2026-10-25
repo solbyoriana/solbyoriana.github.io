@@ -24,7 +24,7 @@ import java.util.Random;
  *
  * Bat rules (set by the studio owner):
  * - Flying bats are the round white-eyed bat, 3-7 of them. Resting bats (hanging/sleeping under the garlands)
- *   are the classic, gothic and glowing-eyes bats, 2-5 of them, one per perch. At most 8 bats in all.
+ *   are the classic, gothic and white-eyed classic bats, 2-5 of them, one per perch. At most 8 bats in all.
  * - Every 10-20 minutes a round picks new counts; a round's counts never repeat either of the two rounds before it.
  * - The two sides are never even (2+2, 3+3, 4+4). When they are, a flying bat switches sides Pac-Man style:
  *   out through the outer edge of its side, back in through the outer edge of the other. Flying bats keep to the
@@ -45,7 +45,7 @@ final class HalloweenLayer extends View {
     private static final float ROUND_MIN = 10 * 60, ROUND_MAX = 20 * 60;
     private static final int FLY = 0, WRAP = 1, TO_PERCH = 2, HANG = 3, SLEEP = 4, EXIT = 5, GONE = 6;
     private static final int CLASSIC = 0, CUTE = 1, GOTHIC = 2, EYES = 3;
-    private static final int INK = Color.rgb(13, 11, 10), ORANGE = Color.rgb(255, 154, 31);
+    private static final int INK = Color.rgb(13, 11, 10);
     private static final int[] RESTING_KINDS = {CLASSIC, GOTHIC, EYES};
 
     // Kept for the whole process, so the no-repeat rule holds across screensaver sessions.
@@ -425,7 +425,7 @@ final class HalloweenLayer extends View {
         c.rotate((float) Math.toDegrees(Math.max(-0.35f, Math.min(0.35f, b.vx / 1200))));
         switch (b.kind) {
             case CLASSIC: classic(c, f); break;
-            case EYES: classic(c, f); eyes(c, -8.5f, 1.2f, ORANGE, 1.7f); break;
+            case EYES: classic(c, f); eyes(c, -8.5f, 1.2f, Color.WHITE, 1.7f); break;
             case CUTE: cute(c, f); break;
             case GOTHIC: gothic(c, f); break;
         }
@@ -511,7 +511,7 @@ final class HalloweenLayer extends View {
         path.moveTo(-3.5f, hy + 1); path.lineTo(-3.5f, hy + 8); path.lineTo(-0.8f, hy + 3); path.close();
         path.moveTo(3.5f, hy + 1); path.lineTo(3.5f, hy + 8); path.lineTo(0.8f, hy + 3); path.close();
         c.drawPath(path, ink);
-        if (!asleep && b.kind == EYES) eyes(c, hy + 0.5f, 1.1f, ORANGE, 1.7f);
+        if (!asleep && b.kind == EYES) eyes(c, hy + 0.5f, 1.1f, Color.WHITE, 1.7f);
         c.restore();
     }
 
