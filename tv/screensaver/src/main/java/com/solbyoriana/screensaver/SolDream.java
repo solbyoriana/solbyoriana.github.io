@@ -1,6 +1,7 @@
 package com.solbyoriana.screensaver;
 
 import android.service.dreams.DreamService;
+import android.widget.FrameLayout;
 
 /** The TV screensaver. Android starts it after 5 idle minutes (system screen_off_timeout). */
 public class SolDream extends DreamService {
@@ -11,6 +12,9 @@ public class SolDream extends DreamService {
         setFullscreen(true);
         PhotoStore store = new PhotoStore(this);
         store.syncInBackground();
-        setContentView(new SlideshowView(this, store));
+        FrameLayout root = new FrameLayout(this);
+        root.addView(new SlideshowView(this, store));
+        if (HalloweenLayer.inSeason()) root.addView(new HalloweenLayer(this));
+        setContentView(root);
     }
 }
